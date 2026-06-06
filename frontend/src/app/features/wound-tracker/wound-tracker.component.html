@@ -1,0 +1,244 @@
+<div class="space-y-6">
+  <header class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <cv-badge tone="primary" [dot]="true">wound-tracker</cv-badge>
+        <span class="text-xs text-slate-500 dark:text-slate-400">Wound &amp; symptom photo tracker</span>
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">Wound &amp; symptom photos</h1>
+    </div>
+    <cv-button variant="primary" (cvClick)="openUpload()">
+      <span cv-btn-icon-left>📷</span> Upload photo
+    </cv-button>
+  </header>
+
+  <cv-card padding="sm">
+    <div class="flex flex-wrap items-end gap-4">
+      <div>
+        <div class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Body location</div>
+        <select [ngModel]="selectedLocation()" (ngModelChange)="selectedLocation.set($event)"
+                class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm">
+          <option value="all">All locations</option>
+          @for (l of locations(); track l) { <option [value]="l">{{ l }}</option> }
+        </select>
+      </div>
+      <div>
+        <div class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Severity</div>
+        <div class="inline-flex rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-0.5">
+          @for (s of ['all','mild','moderate','severe']; track s) {
+            <button type="button" (click)="selectedSeverity.set($any(s))"
+                    [ngClass]="selectedSeverity() === s ? 'bg-white dark:bg-slate-800 shadow text-indigo-700 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'"
+                    class="px-3 py-1.5 text-xs font-medium rounded-lg capitalize transition">
+              {{ s }}
+            </button>
+          }
+        </div>
+      </div>
+      <div>
+        <div class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Stage</div>
+        <select [ngModel]="stageFilter()" (ngModelChange)="stageFilter.set($event)"
+                class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm">
+          @for (o of stageOptions; track o.value) { <option [value]="o.value">{{ o.label }}</option> }
+        </select>
+      </div>
+    </div>
+  </cv-card>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+    <section class="lg:col-span-8">
+      <cv-card title="Photo gallery" icon="🖼️" [subtitle]="filteredAll().length + ' entries'">
+        @if (!filteredAll().length) {
+          <div class="text-center py-12 text-slate-500 dark:text-slate-400">No photos match the current filters.</div>
+        }
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          @for (w of filteredAll(); track w.id) {
+            <button type="button" (click)="selectActive(w.id); openLightbox(w)"
+                    [ngClass]="activeId() === w.id ? 'ring-2 ring-indigo-500' : 'ring-1 ring-slate-200 dark:ring-slate-800'"
+                    class="group text-left rounded-xl overflow-hidden bg-white dark:bg-slate-900 hover:shadow-md transition">
+              <div class="aspect-[4/3] bg-slate-100 dark:bg-slate-800 relative">
+                <img [src]="w.photos[0]?.url || makePlaceholderDataUri(w.location, severityOf(w))" alt="Wound photo" class="w-full h-full object-cover" />
+                <span class="absolute top-1.5 left-1.5"><cv-badge [tone]="severityTone(severityOf(w))" [dot]="true">{{ severityOf(w) }}</cv-badge></span>
+                <span class="absolute top-1.5 right-1.5"><cv-badge [tone]="trendTone(w.trend)">{{ w.trend }}</cv-badge></span>
+              </div>
+              <div class="p-2.5">
+                <div class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{{ w.location }}</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between mt-0.5">
+                  <span class="tabular-nums">Stage {{ w.stage }} · {{ w.lengthCm }} cm</span>
+                  <span class="tabular-nums">{{ w.assessedAt | date:'shortDate' }}</span>
+                </div>
+              </div>
+            </button>
+          }
+        </div>
+      </cv-card>
+    </section>
+
+    <aside class="lg:col-span-4 space-y-4">
+      <cv-card title="Annotation" icon="🩹" subtitle="View the active assessment.">
+        @if (activeWound(); as w) {
+          <div class="space-y-3 text-sm">
+            <div>
+              <div class="text-xs uppercase text-slate-500 dark:text-slate-400">Location</div>
+              <div class="font-semibold text-slate-900 dark:text-slate-100">{{ w.location }}</div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <div class="text-xs uppercase text-slate-500 dark:text-slate-400">Length (cm)</div>
+                <input type="number" min="0" step="0.1" [ngModel]="w.lengthCm" [disabled]="true" class="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 px-2 py-1.5 text-sm tabular-nums" />
+              </div>
+              <div>
+                <div class="text-xs uppercase text-slate-500 dark:text-slate-400">Width (cm)</div>
+                <input type="number" min="0" step="0.1" [ngModel]="w.widthCm" [disabled]="true" class="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 px-2 py-1.5 text-sm tabular-nums" />
+              </div>
+              <div>
+                <div class="text-xs uppercase text-slate-500 dark:text-slate-400">Depth (cm)</div>
+                <input type="number" min="0" step="0.1" [ngModel]="w.depthCm" [disabled]="true" class="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 px-2 py-1.5 text-sm tabular-nums" />
+              </div>
+              <div>
+                <div class="text-xs uppercase text-slate-500 dark:text-slate-400">Exudate</div>
+                <input type="text" [ngModel]="w.exudate" [disabled]="true" class="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 px-2 py-1.5 text-sm capitalize" />
+              </div>
+            </div>
+            <div>
+              <div class="text-xs uppercase text-slate-500 dark:text-slate-400">Peri-wound</div>
+              <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 px-2 py-1.5 text-sm">{{ w.periWound }}</div>
+            </div>
+            <div>
+              <div class="text-xs uppercase text-slate-500 dark:text-slate-400">Pain</div>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="text-2xl">{{ painEmoji(w.pain) }}</span>
+                <div class="flex-1 h-2 rounded-full bg-gradient-to-r from-emerald-300 via-amber-300 to-rose-500 overflow-hidden">
+                  <div class="h-full bg-slate-700/30" [style.width.%]="w.pain * 10"></div>
+                </div>
+                <span class="text-sm tabular-nums font-semibold">{{ w.pain }}/10</span>
+              </div>
+            </div>
+            <div>
+              <div class="text-xs uppercase text-slate-500 dark:text-slate-400">Notes</div>
+              <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 px-2 py-1.5 text-sm">{{ w.notes }}</div>
+            </div>
+          </div>
+        } @else {
+          <div class="text-sm text-slate-500 dark:text-slate-400">Select a photo from the gallery to view its annotation.</div>
+        }
+      </cv-card>
+    </aside>
+  </div>
+
+  <cv-card title="Progression timeline" icon="⏱️" [subtitle]="'For ' + (activeWound()?.location ?? '—')">
+    @if (!timeline().length) {
+      <div class="text-sm text-slate-500 dark:text-slate-400">No timeline entries.</div>
+    }
+    <div class="flex items-stretch gap-3 overflow-x-auto pb-2">
+      @for (t of timeline(); track t.id) {
+        <button type="button" (click)="selectActive(t.id); openLightbox(activeWound()!)"
+                class="group shrink-0 w-32 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden text-left hover:shadow-md transition">
+          <div class="aspect-[4/3] bg-slate-100 dark:bg-slate-800">
+            <img [src]="t.thumb" alt="" class="w-full h-full object-cover" />
+          </div>
+          <div class="p-2">
+            <div class="text-xs font-semibold text-slate-900 dark:text-slate-100 tabular-nums">{{ t.ts | date:'shortDate' }}</div>
+            <div class="text-[10px] text-slate-500 dark:text-slate-400">{{ t.location }}</div>
+            <div class="mt-1"><cv-badge [tone]="severityTone(t.severity)" [dot]="true" size="sm">{{ t.severity }}</cv-badge></div>
+          </div>
+        </button>
+      }
+    </div>
+  </cv-card>
+</div>
+
+<cv-modal [open]="!!lightbox()" (closed)="closeLightbox()" size="xl" [title]="lightbox()?.location || 'Photo'" [hasFooter]="true">
+  @if (lightbox(); as w) {
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div class="md:col-span-3">
+        <img [src]="w.photos[0]?.url || makePlaceholderDataUri(w.location, severityOf(w))" alt="Wound photo" class="w-full h-96 object-cover rounded-xl border border-slate-200 dark:border-slate-700" />
+      </div>
+      <div class="md:col-span-2 space-y-3 text-sm">
+        <div class="flex items-center gap-2">
+          <cv-badge [tone]="severityTone(severityOf(w))" [dot]="true">{{ severityOf(w) | titlecase }}</cv-badge>
+          <cv-badge [tone]="trendTone(w.trend)">{{ w.trend | titlecase }}</cv-badge>
+          <cv-badge tone="neutral">Stage {{ w.stage }}</cv-badge>
+        </div>
+        <dl class="grid grid-cols-2 gap-2">
+          <div><dt class="text-xs uppercase text-slate-500">Length</dt><dd class="font-semibold tabular-nums">{{ w.lengthCm }} cm</dd></div>
+          <div><dt class="text-xs uppercase text-slate-500">Width</dt><dd class="font-semibold tabular-nums">{{ w.widthCm }} cm</dd></div>
+          <div><dt class="text-xs uppercase text-slate-500">Depth</dt><dd class="font-semibold tabular-nums">{{ w.depthCm }} cm</dd></div>
+          <div><dt class="text-xs uppercase text-slate-500">Exudate</dt><dd class="font-semibold capitalize">{{ w.exudate }}</dd></div>
+        </dl>
+        <div>
+          <div class="text-xs uppercase text-slate-500">Pain</div>
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">{{ painEmoji(w.pain) }}</span>
+            <span class="text-lg font-semibold tabular-nums">{{ w.pain }}/10</span>
+          </div>
+        </div>
+        <div><div class="text-xs uppercase text-slate-500">Peri-wound</div><div class="text-slate-700 dark:text-slate-200">{{ w.periWound }}</div></div>
+        <div><div class="text-xs uppercase text-slate-500">Notes</div><div class="text-slate-700 dark:text-slate-200">{{ w.notes }}</div></div>
+        <div class="text-xs text-slate-500 dark:text-slate-400">Assessed {{ w.assessedAt | date:'medium' }} by {{ w.assessedBy }}</div>
+      </div>
+    </div>
+  }
+  <div cv-modal-footer>
+    <cv-button variant="ghost" (cvClick)="closeLightbox()">Close</cv-button>
+  </div>
+</cv-modal>
+
+<cv-modal [open]="uploadOpen()" (closed)="closeUpload()" title="Upload wound photo" size="md" [hasFooter]="true">
+  <form class="space-y-3" (submit)="$event.preventDefault(); confirmUpload()">
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Location</label>
+        <select [ngModel]="uploadLoc()" (ngModelChange)="uploadLoc.set($event)" name="loc" class="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm">
+          @for (l of locations(); track l) { <option [value]="l">{{ l }}</option> }
+        </select>
+      </div>
+      <div>
+        <label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Stage</label>
+        <select [ngModel]="uploadStage()" (ngModelChange)="uploadStage.set($event)" name="stage" class="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm">
+          @for (s of stageInputOptions; track s) { <option [value]="s">{{ s }}</option> }
+        </select>
+      </div>
+    </div>
+    <div>
+      <label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Size (cm)</label>
+      <input type="number" min="0" step="0.1" [ngModel]="uploadSize()" (ngModelChange)="uploadSize.set(+$event)" name="size" class="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm" />
+    </div>
+    <div>
+      <label class="text-xs uppercase font-semibold text-slate-500 dark:text-slate-400">Color</label>
+      <div class="mt-1 flex flex-wrap gap-1.5">
+        @for (c of colorOptions; track c) {
+          <button type="button" (click)="uploadColor.set(c)"
+                  [class.ring-2]="uploadColor() === c"
+                  [class.ring-indigo-500]="uploadColor() === c"
+                  [style.background]="c"
+                  class="h-7 w-7 rounded-full border border-slate-200 dark:border-slate-700"></button>
+        }
+      </div>
+    </div>
+    <div>
+      <label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Drainage</label>
+      <select [ngModel]="uploadDrainage()" (ngModelChange)="uploadDrainage.set($event)" name="drain" class="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm">
+        <option value="none">None</option>
+        <option value="serous">Serous</option>
+        <option value="sanguineous">Sanguineous</option>
+        <option value="purulent">Purulent</option>
+      </select>
+    </div>
+    <div>
+      <cv-emoji-slider
+        [emojis]="['😄','🙂','😐','🙁','😣']"
+        [value]="uploadPain()"
+        ariaLabel="Pain level"
+        (valueChange)="uploadPain.set($event)">
+      </cv-emoji-slider>
+    </div>
+    <div>
+      <label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Notes</label>
+      <textarea [ngModel]="uploadNotes()" (ngModelChange)="uploadNotes.set($event)" name="notes" rows="2" class="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm"></textarea>
+    </div>
+  </form>
+  <div cv-modal-footer>
+    <cv-button variant="ghost" (cvClick)="closeUpload()">Cancel</cv-button>
+    <cv-button variant="primary" (cvClick)="confirmUpload()">Upload</cv-button>
+  </div>
+</cv-modal>

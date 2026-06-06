@@ -1,0 +1,186 @@
+<div class="space-y-6">
+  <header>
+    <div class="flex items-center gap-2 mb-1">
+      <cv-badge tone="primary" [dot]="true">prescription</cv-badge>
+      <span class="text-xs text-slate-500 dark:text-slate-400">E-Prescription &amp; renewal engine</span>
+    </div>
+    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">Prescriptions</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400">Issue, sign, and renew patient prescriptions.</p>
+  </header>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="lg:col-span-2">
+      <cv-card title="New prescription" icon="🖋️" subtitle="All fields are required before signing.">
+        <form (submit)="$event.preventDefault(); openSign()" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2">
+            <label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Patient</label>
+            <select [ngModel]="patientId()" (ngModelChange)="patientId.set($event)" name="patient"
+                    class="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm">
+              @for (p of patients; track p.id) { <option [value]="p.id">{{ p.name }}</option> }
+            </select>
+          </div>
+
+          <div class="sm:col-span-2 relative">
+            <label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Drug (autocomplete)</label>
+            <input type="text" [ngModel]="drug()" (ngModelChange)="drug.set($event)" name="drug" placeholder="Type a drug name…" autocomplete="off"
+                   class="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm" />
+            @if (drugSuggestions().length) {
+              <ul class="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg text-sm">
+                @for (d of drugSuggestions(); track d) {
+                  <li><button type="button" (click)="selectDrug(d)" class="w-full text-left px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800">{{ d }}</button></li>
+                }
+              </ul>
+            }
+          </div>
+
+          <div>
+            <label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Dose</label>
+            <input type="text" [ngModel]="dose()" (ngModelChange)="dose.set($event)" name="dose" placeholder="e.g. 10 mg"
+                   class="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Frequency</label>
+            <select [ngModel]="frequency()" (ngModelChange)="frequency.set($event)" name="freq"
+                    class="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm">
+              @for (f of frequencyOptions; track f) { <option [value]="f">{{ f }}</option> }
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Duration (days)</label>
+            <input type="number" min="1" max="365" [ngModel]="duration()" (ngModelChange)="duration.set($event)" name="duration"
+                   class="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Refills</label>
+            <div class="mt-1 flex items-center gap-2">
+              <button type="button" (click)="setRefills(refills() - 1)" class="h-9 w-9 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-lg leading-none">−</button>
+              <div class="flex-1 text-center text-lg font-semibold tabular-nums">{{ refills() }}</div>
+              <button type="button" (click)="setRefills(refills() + 1)" class="h-9 w-9 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-lg leading-none">+</button>
+            </div>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Notes (optional)</label>
+            <textarea [ngModel]="notes()" (ngModelChange)="notes.set($event)" name="notes" rows="2"
+                      placeholder="Indication, titration, labs to monitor…"
+                      class="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm"></textarea>
+          </div>
+          <div class="sm:col-span-2 flex items-center justify-between gap-2 pt-2">
+            <div class="text-xs text-slate-500 dark:text-slate-400">
+              @if (!formValid()) { Complete the required fields to issue. } @else { Ready to sign. }
+            </div>
+            <cv-button type="submit" variant="primary" [disabled]="!formValid()">
+              <span cv-btn-icon-left>🖋️</span> Sign &amp; Issue
+            </cv-button>
+          </div>
+        </form>
+      </cv-card>
+    </div>
+
+    <div>
+      <cv-card title="Expiring soon" icon="⏳" subtitle="Active Rx with < 14 days remaining.">
+        @if (expiring().length === 0) {
+          <div class="text-sm text-slate-500 dark:text-slate-400">No active prescriptions expiring in the next 14 days.</div>
+        }
+        @for (r of expiring(); track r.id) {
+          <div class="flex items-center justify-between gap-3 py-2 border-b last:border-b-0 border-slate-100 dark:border-slate-800">
+            <div class="min-w-0">
+              <div class="font-medium truncate text-slate-900 dark:text-slate-100">{{ r.drug }} <span class="text-slate-400 text-xs">{{ r.dose }}</span></div>
+              <div class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ r.patientName }} · expires in {{ daysUntilExpiry(r) }}d</div>
+            </div>
+            <cv-button size="sm" variant="success" (cvClick)="renew(r.id)">
+              <span cv-btn-icon-left>🔄</span> Renew
+            </cv-button>
+          </div>
+        }
+      </cv-card>
+    </div>
+  </div>
+
+  <cv-card title="Prescription history" icon="📜" subtitle="All prescriptions issued by you.">
+    <div class="overflow-x-auto -mx-2 px-2">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <th class="text-left font-medium pl-2 py-2">Patient</th>
+            <th class="text-left font-medium py-2">Drug</th>
+            <th class="text-left font-medium py-2">Dose</th>
+            <th class="text-left font-medium py-2">Frequency</th>
+            <th class="text-left font-medium py-2">Refills</th>
+            <th class="text-left font-medium py-2">Issued</th>
+            <th class="text-left font-medium py-2">Expires</th>
+            <th class="text-left font-medium py-2">Status</th>
+            <th class="text-left font-medium py-2">Signed by</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of history(); track r.id) {
+            <tr class="border-b border-slate-100 dark:border-slate-800">
+              <td class="pl-2 py-2">
+                <div class="flex items-center gap-2">
+                  <cv-avatar [name]="r.patientName" size="sm"></cv-avatar>
+                  <span class="font-medium text-slate-900 dark:text-slate-100">{{ r.patientName }}</span>
+                </div>
+              </td>
+              <td class="py-2 text-slate-800 dark:text-slate-200">{{ r.drug }}</td>
+              <td class="py-2 tabular-nums text-slate-700 dark:text-slate-200">{{ r.dose }}</td>
+              <td class="py-2 text-slate-700 dark:text-slate-200">{{ r.frequency }}</td>
+              <td class="py-2 tabular-nums text-slate-700 dark:text-slate-200">{{ r.refills }}</td>
+              <td class="py-2 tabular-nums text-slate-700 dark:text-slate-200">{{ r.issuedAt | date:'mediumDate' }}</td>
+              <td class="py-2 tabular-nums text-slate-700 dark:text-slate-200">
+                {{ r.expiresAt | date:'mediumDate' }}
+                @if (isExpiringSoon(r)) { <cv-badge tone="warning">soon</cv-badge> }
+              </td>
+              <td class="py-2"><cv-badge [tone]="statusTone(r.status)">{{ r.status | titlecase }}</cv-badge></td>
+              <td class="py-2 text-xs text-slate-500 dark:text-slate-400">{{ r.signedBy }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </cv-card>
+</div>
+
+<cv-modal [open]="signOpen()" (closed)="closeSign()" title="Sign &amp; issue prescription" size="md" [hasFooter]="true">
+  <!-- Modal Body -->
+  @if (!signedRx()) {
+    <div class="space-y-3">
+      <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3 text-sm">
+        <div class="text-xs uppercase text-slate-500 dark:text-slate-400 mb-1">Summary</div>
+        <div class="text-slate-900 dark:text-slate-100">
+          <strong>{{ drug() }}</strong> {{ dose() }} · {{ frequency() }} · {{ duration() }} days · {{ refills() }} refills
+        </div>
+        <div class="text-slate-500 dark:text-slate-400 mt-0.5">For: {{ patientNameOf(patientId()) }}</div>
+      </div>
+      <div>
+        <label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Provider signature</label>
+        <cv-signature-pad (signed)="signSig.set($event)" [width]="500" [height]="160"></cv-signature-pad>
+      </div>
+      @if (sigError()) {
+        <div class="rounded-lg border border-rose-300 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-200 px-3 py-2 text-sm">{{ sigError() }}</div>
+      }
+    </div>
+  } @else {
+    <div class="text-center py-6">
+      <div class="mx-auto h-20 w-20 rounded-full bg-emerald-100 dark:bg-emerald-500/20 grid place-items-center animate-check-bounce">
+        <svg viewBox="0 0 24 24" class="h-10 w-10 text-emerald-600 dark:text-emerald-300" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12l5 5L20 7"/>
+        </svg>
+      </div>
+      <h3 class="mt-4 text-lg font-semibold text-slate-900 dark:text-slate-100">Prescription issued</h3>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        Rx <span class="font-mono">{{ signedRx()!.id }}</span> · {{ signedRx()!.drug }} {{ signedRx()!.dose }}<br>
+        for {{ signedRx()!.patientName }}
+      </p>
+    </div>
+  }
+
+  <!-- Modal Footer -->
+  <div cv-modal-footer>
+    @if (!signedRx()) {
+      <cv-button variant="ghost" (cvClick)="closeSign()">Cancel</cv-button>
+      <cv-button variant="primary" (cvClick)="confirmSign()">Issue prescription</cv-button>
+    } @else {
+      <cv-button variant="primary" (cvClick)="acknowledgeIssued()">Done</cv-button>
+    }
+  </div>
+</cv-modal>

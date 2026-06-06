@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Compiled output
+dist/
+out-tsc/
+bazel-out/
+build/
+
+# Angular cache
+.angular/
+
+# System / IDE
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/*
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log
+yarn-error.log
+testem.log
+connect.lock
+coverage/
+
+# Local env files
+.env
+.env.local
+.env.*.local
