@@ -1,0 +1,37 @@
+/**
+ * services/ai-rag/tsconfig.json
+ *
+ * AI/RAG microservice. Uses CommonJS for compatibility with ChromaDB,
+ * KafkaJS, and Drizzle ORM CommonJS modules — the same deviation from the
+ * root ESM settings as the API gateway and other NestJS microservices.
+ *
+ * moduleResolution "node10" (a.k.a. "Node") is required so TypeScript
+ * resolves the chromadb package via its CJS `main` entry (`dist/cjs/...`)
+ * rather than the ESM `exports` conditional that node10 does not understand.
+ *
+ * References: contracts (event payload schemas), fhir-types (FHIR resource
+ * shapes for RAG context), kafka (typed consumer/producer + topic registry),
+ * and db (Drizzle client + schema for the ai_diagnoses table).
+ */
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    // CommonJS for ChromaDB/KafkaJS/Drizzle compatibility.
+    "module": "CommonJS",
+    "moduleResolution": "node10",
+    // Required by NestJS DI (reflect-metadata based).
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "references": [
+    { "path": "../../packages/contracts" },
+    { "path": "../../packages/fhir-types" },
+    { "path": "../../packages/kafka" },
+    { "path": "../../packages/db" }
+  ],
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules", "**/*.spec.ts"]
+}

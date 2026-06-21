@@ -1,0 +1,56 @@
+# ─────────────────────────────────────────────────────────────
+# Deploy — Build & Push Docker Images
+#
+# Triggers on version tags (v*.*.*) or manual dispatch with an
+# environment selection (staging / production).
+#
+# Builds all 6 application Docker images (api, web, 4 microservices)
+# and validates them. Registry push wiring (ghcr.io / ECR / GCR)
+# lands in Phase 3 once the deployment target is confirmed.
+# ─────────────────────────────────────────────────────────────
+name: Deploy
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Semantic version tags trigger deployment.
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  build-and-push:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+    # Use GitHub environment protection rules (secrets, approvals).
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    permissions:
+      contents: read
+      packages: write # Required for ghcr.io push (Phase 3).
+    steps:
+      - uses: actions/checkout@v4
+
+      # Derive a version tag from the git ref (tag name or short SHA).
+      - name: Set image tag
+        id: tag
+        run: echo "version=${GITHUB_REF_NAME:-sha-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      # Build all 6 application images using docker-compose build.
+      # This uses the Dockerfiles in docker/ with the repo root as context.
+      - name: Build images
+        run: |
+          docker compose -f docker/docker-compose.yml build \
+            api web fhir-ingestion ai-rag notifications audit
+
+      # NOTE: Registry push wiring lands in Phase 3 once the deployment
+      # target (k8s / ECS / Fly / Cloud Run) is confirmed.
+      # The following step just lists the built images for verification.
+      - name: Image build summary
+        run: docker images | grep caregiver

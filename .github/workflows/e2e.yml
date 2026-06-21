@@ -1,0 +1,64 @@
+# ─────────────────────────────────────────────────────────────
+# E2E — Playwright End-to-End + Visual Regression pipeline
+#
+# Runs on pull requests targeting main and on manual dispatch.
+# Brings up infra containers (Postgres, Kafka, Chroma), installs
+# Playwright browsers, runs the E2E suite, and uploads the report.
+# ─────────────────────────────────────────────────────────────
+name: E2E (Playwright)
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # Allow manual triggering from GitHub UI.
+
+jobs:
+  playwright:
+    name: Playwright E2E + Visual Regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # Checkout the repository.
+      - uses: actions/checkout@v4
+
+      # Setup Node 20 LTS with npm cache.
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.11'
+          cache: 'npm'
+
+      # Install all workspaces.
+      - name: Install workspaces
+        run: npm install
+
+      # Install Playwright's Chromium browser binary + OS dependencies.
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # Bring up only the infra containers needed for E2E
+      # (Ollama is too heavy for CI; ai-rag tests will mock the LLM).
+      - name: Bring up infra (postgres, kafka, chroma)
+        run: |
+          docker compose -f docker/docker-compose.yml up -d postgres kafka chroma
+          sleep 20 # Wait for containers to be healthy.
+
+      # Run the Playwright test suite.
+      # continue-on-error in Phase 1 — only a smoke test exists.
+      - name: Run Playwright
+        run: npm run test:e2e
+        continue-on-error: true # Phase 1: only smoke test exists.
+
+      # Upload the HTML report as a build artifact (always, even on failure).
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      # Tear down infra containers (always, even on failure).
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker/docker-compose.yml down

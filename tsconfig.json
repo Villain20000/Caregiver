@@ -1,40 +1,37 @@
+/**
+ * tsconfig.json — root project-references solution file.
+ *
+ * This file contains NO compilerOptions of its own. It exists solely to
+ * declare TypeScript project references so that `tsc --build` can orchestrate
+ * incremental compilation across all 13 workspaces in dependency order.
+ *
+ * The references array is ordered roughly bottom-up in the dependency graph:
+ *   packages (leaf libs) → apps/services (consumers of packages).
+ *
+ * When you run `tsc -b` from the root, TypeScript uses this file to determine
+ * the correct build order and only recompiles workspaces whose dependencies
+ * have changed.
+ */
 {
-  "compileOnSave": false,
-  "compilerOptions": {
-    "outDir": "./dist/out-tsc",
-    "strict": true,
-    "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "skipLibCheck": true,
-    "isolatedModules": true,
-    "esModuleInterop": true,
-    "experimentalDecorators": true,
-    "moduleResolution": "bundler",
-    "importHelpers": true,
-    "target": "ES2022",
-    "module": "ES2022",
-    "useDefineForClassFields": false,
-    "lib": ["ES2022", "dom"],
-    "forceConsistentCasingInFileNames": true,
-    "baseUrl": "./",
-    "ignoreDeprecations": "6.0",
-    "rootDir": "./src",
-    "paths": {
-      "@core/*": ["src/app/core/*"],
-      "@shared/*": ["src/app/shared/*"],
-      "@features/*": ["src/app/features/*"]
-    }
-  },
-  "angularCompilerOptions": {
-    "enableI18nLegacyMessageIdFormat": false,
-    "strictInjectionParameters": true,
-    "strictInputAccessModifiers": true,
-    "strictTemplates": true
-  }
+  "files": [],
+  "references": [
+    // ── Shared packages (leaf dependencies) ──────────────────
+    { "path": "packages/config" },
+    { "path": "packages/fhir-types" },
+    { "path": "packages/contracts" },
+    { "path": "packages/rbac" },
+    { "path": "packages/db" },
+    { "path": "packages/kafka" },
+    { "path": "packages/ui" },
+
+    // ── Apps (consume packages) ──────────────────────────────
+    { "path": "apps/api" },
+    { "path": "apps/web" },
+
+    // ── Microservices (consume packages) ─────────────────────
+    { "path": "services/fhir-ingestion" },
+    { "path": "services/ai-rag" },
+    { "path": "services/notifications" },
+    { "path": "services/audit" }
+  ]
 }
-
-
-
-

@@ -1,0 +1,54 @@
+# ─────────────────────────────────────────────────────────────
+# Dockerfile.service — Generic microservice Dockerfile
+#
+# Build context is the repo root. The target service is selected at
+# runtime via the `command` field in docker-compose.yml:
+#   command: npm run start --workspace @caregiver/<service-name>
+#
+# This single Dockerfile serves all 4 microservices:
+#   fhir-ingestion, ai-rag, notifications, audit
+#
+# Three stages: deps → build → runtime (Alpine, minimal footprint).
+# ─────────────────────────────────────────────────────────────
+
+# Stage 1: Install dependencies for all services + shared packages.
+# Copies all package.json files so npm workspaces can resolve the
+# full dependency graph in one install pass.
+FROM node:20.11-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json* ./
+# Copy shared package package.json files.
+COPY packages/contracts/package.json ./packages/contracts/package.json
+COPY packages/db/package.json ./packages/db/package.json
+COPY packages/fhir-types/package.json ./packages/fhir-types/package.json
+COPY packages/kafka/package.json ./packages/kafka/package.json
+COPY packages/rbac/package.json ./packages/rbac/package.json
+# Copy all 4 microservice package.json files.
+COPY services/fhir-ingestion/package.json ./services/fhir-ingestion/package.json
+COPY services/ai-rag/package.json ./services/ai-rag/package.json
+COPY services/notifications/package.json ./services/notifications/package.json
+COPY services/audit/package.json ./services/audit/package.json
+# Install all workspaces (shared deps are deduped by npm).
+RUN npm install --include-workspace-root
+
+# Stage 2: Build all TypeScript sources.
+# Builds shared packages first (via project references), then services.
+FROM node:20.11-alpine AS build
+WORKDIR /app
+COPY --from=deps /app ./
+COPY tsconfig.base.json tsconfig.json ./
+COPY packages ./packages
+COPY services ./services
+# Build all workspaces that declare a build script.
+RUN npm run build --workspaces --if-present
+
+# Stage 3: Production runtime.
+# The `command` in docker-compose.yml determines which service starts.
+FROM node:20.11-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=build /app ./
+# Expose a generic port — each service maps its specific port in compose.
+EXPOSE 4000
+# Default CMD is overridden by docker-compose `command` field.
+CMD ["node", "services/fhir-ingestion/dist/main.js"]

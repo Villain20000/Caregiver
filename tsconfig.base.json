@@ -1,0 +1,66 @@
+/**
+ * tsconfig.base.json — shared TypeScript compiler options for ALL workspaces.
+ *
+ * Every workspace's tsconfig.json extends this file and adds only its own
+ * `outDir`, `rootDir`, `composite`, and `references`. This ensures consistent
+ * strict-mode settings, module resolution, and path aliases across the monorepo.
+ *
+ * Key decisions:
+ *   - target ES2022  → top-level await, class fields, error causes
+ *   - module ESNext   → native ESM (root package.json has "type": "module")
+ *   - moduleResolution Bundler → matches Angular/NestJS bundler resolution
+ *   - strict + noUncheckedIndexedAccess → maximum type safety
+ *   - paths → @caregiver/* aliases resolve to source TS (not dist) for dev
+ */
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+
+    // Strict-mode family — all enabled for maximum type safety.
+    "strict": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    // noPropertyAccessFromIndexSignature disabled — FHIR resources use bracket access heavily.
+    "noPropertyAccessFromIndexSignature": false,
+    // exactOptionalPropertyTypes disabled — too noisy with FHIR optional fields.
+    "exactOptionalPropertyTypes": false,
+
+    // Module interop
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+
+    // Emit — declaration + maps so workspaces can reference each other.
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+
+    // Angular/NestJS decorator support
+    "useDefineForClassFields": false,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "verbatimModuleSyntax": false,
+    "importHelpers": true,
+
+    // Path aliases — resolve to source TS files for dev-time imports.
+    "baseUrl": ".",
+    "paths": {
+      "@caregiver/contracts": ["packages/contracts/src/index.ts"],
+      "@caregiver/fhir-types": ["packages/fhir-types/src/index.ts"],
+      "@caregiver/rbac": ["packages/rbac/src/index.ts"],
+      "@caregiver/db": ["packages/db/src/index.ts"],
+      "@caregiver/kafka": ["packages/kafka/src/index.ts"],
+      "@caregiver/ui": ["packages/ui/src/index.ts"],
+      "@caregiver/config": ["packages/config/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "coverage", ".angular"]
+}

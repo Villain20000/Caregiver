@@ -1,0 +1,23 @@
+{
+  "//": "packages/config — shared configuration re-exports (ESLint, TS, Prettier). Leaf package with no runtime deps.",
+  "name": "@caregiver/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "//exports": "Allows consumers to import specific config files via subpath exports.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./eslint": "./eslint.cjs",
+    "./prettier": "./.prettierrc.json"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

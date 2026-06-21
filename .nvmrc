@@ -1,0 +1,4 @@
+# Node version pinned for the entire monorepo.
+# Read by nvm (`nvm use`) and by GitHub Actions (setup-node action).
+# NestJS 10 and Angular 17 both require Node >= 18; we pin 20.11 LTS.
+20.11.0

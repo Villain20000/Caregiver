@@ -1,0 +1,51 @@
+{
+  "//": "apps/api — NestJS API Gateway (BFF pattern). Exposes REST + Socket.io to the Angular frontend, delegates to microservices via Kafka. Handles auth, RBAC guards, and request validation.",
+  "name": "@caregiver/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/main.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node dist/main.js",
+    "dev": "tsx watch src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "//dependencies": "NestJS 10 on Express + Socket.io for real-time + Kafka for event production + JWT for auth + Passport for auth strategy + class-validator for DTO validation + bcrypt for password hashing.",
+  "dependencies": {
+    "@caregiver/contracts": "0.1.0",
+    "@caregiver/db": "0.1.0",
+    "@caregiver/fhir-types": "0.1.0",
+    "@caregiver/kafka": "0.1.0",
+    "@caregiver/rbac": "0.1.0",
+    "@nestjs/common": "^10.4.0",
+    "@nestjs/config": "^3.2.0",
+    "@nestjs/core": "^10.4.0",
+    "@nestjs/jwt": "^10.2.0",
+    "@nestjs/microservices": "^10.4.0",
+    "@nestjs/passport": "^10.0.3",
+    "@nestjs/platform-express": "^10.4.0",
+    "@nestjs/platform-socket.io": "^10.4.0",
+    "@nestjs/websockets": "^10.4.0",
+    "bcrypt": "^5.1.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "express": "^4.19.2",
+    "kafkajs": "^2.2.4",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.0",
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "^10.4.0",
+    "@types/node": "^20.11.30",
+    "@types/passport-jwt": "^4.0.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.1.0"
+  }
+}

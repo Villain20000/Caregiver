@@ -1,0 +1,26 @@
+/**
+ * apps/web/tsconfig.json
+ *
+ * Angular SPA workspace. References the shared packages it consumes:
+ * contracts (DTOs), fhir-types (FHIR resource shapes), rbac (role checks),
+ * and ui (shared component library).
+ *
+ * Excludes spec files from the build — they're handled by `ng test`.
+ * Phase 2 will add tsconfig.app.json and tsconfig.spec.json when we run `ng new`.
+ */
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist/out-tsc",
+    "rootDir": "./src",
+    "composite": true
+  },
+  "references": [
+    { "path": "../../packages/contracts" },
+    { "path": "../../packages/fhir-types" },
+    { "path": "../../packages/rbac" },
+    { "path": "../../packages/ui" }
+  ],
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules", "**/*.spec.ts"]
+}

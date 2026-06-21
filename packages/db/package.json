@@ -1,0 +1,31 @@
+{
+  "//": "packages/db — Drizzle ORM schema, migrations, and client factory. Shared by apps/api and services that need direct Postgres access (fhir-ingestion, audit).",
+  "name": "@caregiver/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc --noEmit",
+    "//db_scripts": "Drizzle Kit commands — generate creates migration SQL, migrate applies it, studio opens a GUI, push syncs schema directly (dev only).",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/migrate.ts",
+    "db:studio": "drizzle-kit studio",
+    "db:push": "drizzle-kit push",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "//dependencies": "pg for connection pooling, postgres for the newer pg driver, drizzle-orm for the query builder + schema.",
+  "dependencies": {
+    "drizzle-orm": "^0.33.0",
+    "pg": "^8.13.0",
+    "postgres": "^3.4.4"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.10",
+    "drizzle-kit": "^0.24.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
+  }
+}

@@ -1,0 +1,21 @@
+/**
+ * apps/web/tsconfig.app.json
+ *
+ * TypeScript configuration used by the Angular CLI (`ng build`) for the
+ * browser application build. Extends the shared base config to inherit the
+ * strict-mode settings and the @caregiver/* path aliases.
+ *
+ * Unlike apps/web/tsconfig.json (which is the project-references config used
+ * by `tsc -b`), this file:
+ *   - Drops `composite` (the Angular application builder manages emit).
+ *   - Drops the `references` array (the builder resolves @caregiver/* packages
+ *     directly via the path aliases in tsconfig.base.json and bundles their
+ *     source into the application output).
+ *   - Narrows `include` to the application entry + app sources.
+ */
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {},
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules", "**/*.spec.ts"]
+}

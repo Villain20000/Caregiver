@@ -1,0 +1,16 @@
+/**
+ * packages/config/tsconfig.json
+ *
+ * Leaf package — no project references. Extends the root base config and
+ * sets composite:true so it can be referenced by other workspaces.
+ */
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules"]
+}

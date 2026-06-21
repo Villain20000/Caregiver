@@ -1,0 +1,22 @@
+{
+  "//": "packages/contracts — shared event schemas, DTOs, and inter-service message contracts. Depends on fhir-types for FHIR resource references.",
+  "name": "@caregiver/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "//dependencies": "Depends on fhir-types (FHIR resource references in payloads) and kafka (KafkaTopic type in the EventPayloads map).",
+  "dependencies": {
+    "@caregiver/fhir-types": "0.1.0",
+    "@caregiver/kafka": "0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

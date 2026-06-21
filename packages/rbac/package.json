@@ -1,0 +1,21 @@
+{
+  "//": "packages/rbac — Role-Based Access Control: 10 healthcare roles × 30 micro-features = 300 permission points. Depends on contracts for permission DTOs.",
+  "name": "@caregiver/rbac",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "//dependencies": "Depends on contracts for shared permission/role DTOs.",
+  "dependencies": {
+    "@caregiver/contracts": "0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

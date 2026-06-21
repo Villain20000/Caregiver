@@ -1,0 +1,60 @@
+# ─────────────────────────────────────────────────────────────
+# CI — Continuous Integration pipeline
+#
+# Runs on every push to main and every pull request targeting main.
+# Executes: format check → lint → typecheck → unit tests → compose validate.
+# Cancels previous runs on the same branch to save CI minutes.
+# ─────────────────────────────────────────────────────────────
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress CI runs when a new commit is pushed to the same branch.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-typecheck-test:
+    name: Lint, Typecheck & Unit Test
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repository (full history not needed for CI).
+      - uses: actions/checkout@v4
+
+      # Setup Node 20 LTS (matches .nvmrc) with npm cache for speed.
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.11'
+          cache: 'npm'
+
+      # Install all 13 workspaces + root tooling.
+      - name: Install workspaces
+        run: npm install
+
+      # Check formatting without modifying files.
+      - name: Format check
+        run: npm run format:check
+
+      # ESLint across all workspace TS files (zero warnings enforced).
+      - name: Lint
+        run: npm run lint
+
+      # TypeScript type checking without emitting (catches type errors).
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Unit tests (vitest for services, ng test for Angular).
+      # continue-on-error in Phase 1 — no test files exist yet.
+      - name: Unit tests
+        run: npm run test
+        continue-on-error: true # Phase 1: no test files yet.
+
+      # Validate the docker-compose file syntax (catches YAML errors).
+      - name: Validate docker-compose
+        run: docker compose -f docker/docker-compose.yml config >/dev/null

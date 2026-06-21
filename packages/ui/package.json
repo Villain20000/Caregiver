@@ -1,0 +1,23 @@
+{
+  "//": "packages/ui — shared Angular standalone component library (cards, tables, charts, role-badge, fhir-resource-viewer, alert-toast). Consumed by apps/web.",
+  "name": "@caregiver/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "//peerDependencies": "Angular is provided by the consuming app (apps/web), not bundled here. This avoids duplicate Angular instances.",
+  "peerDependencies": {
+    "@angular/core": "^17.0.0",
+    "@angular/common": "^17.0.0",
+    "rxjs": "^7.8.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

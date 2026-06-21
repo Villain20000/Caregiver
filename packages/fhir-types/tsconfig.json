@@ -1,0 +1,16 @@
+/**
+ * packages/fhir-types/tsconfig.json
+ *
+ * Leaf package — no project references. FHIR types are foundational;
+ * many other packages and services depend on them.
+ */
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules"]
+}

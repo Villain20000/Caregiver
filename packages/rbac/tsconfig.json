@@ -1,0 +1,16 @@
+/**
+ * packages/rbac/tsconfig.json
+ *
+ * References contracts because RBAC permission DTOs are shared types.
+ */
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true
+  },
+  "references": [{ "path": "../contracts" }],
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules"]
+}

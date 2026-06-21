@@ -1,0 +1,23 @@
+/**
+ * packages/contracts/tsconfig.json
+ *
+ * References fhir-types because event payloads embed FHIR resources.
+ * Also references kafka because the EventPayloads type map uses KafkaTopic.
+ *
+ * Note: rootDir is not set because this project imports types from
+ * @caregiver/kafka via project references. TypeScript resolves these
+ * through the references, not through rootDir.
+ */
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "composite": true
+  },
+  "references": [
+    { "path": "../fhir-types" },
+    { "path": "../kafka" }
+  ],
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules"]
+}

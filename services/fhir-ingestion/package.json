@@ -1,0 +1,38 @@
+{
+  "//": "services/fhir-ingestion — NestJS microservice that consumes external FHIR R4 bundles from Kafka, validates them against FHIR R4 schemas, persists to Postgres, and emits validated + audit events.",
+  "name": "@caregiver/fhir-ingestion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/main.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node dist/main.js",
+    "dev": "tsx watch src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "//dependencies": "NestJS 10 on Express for the application host, KafkaJS for event consumption/production, Drizzle ORM + postgres driver for persistence, reflect-metadata for NestJS DI.",
+  "dependencies": {
+    "@caregiver/contracts": "0.1.0",
+    "@caregiver/db": "0.1.0",
+    "@caregiver/fhir-types": "0.1.0",
+    "@caregiver/kafka": "0.1.0",
+    "@nestjs/common": "^10.4.0",
+    "@nestjs/core": "^10.4.0",
+    "@nestjs/platform-express": "^10.4.0",
+    "drizzle-orm": "^0.33.0",
+    "kafkajs": "^2.2.4",
+    "postgres": "^3.4.4",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.0"
+  },
+  "//devDependencies": "Node types + tsx for dev-mode ESM transpilation + TypeScript + vitest for unit tests.",
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.1.0"
+  }
+}

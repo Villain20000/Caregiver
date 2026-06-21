@@ -1,0 +1,21 @@
+{
+  "//": "packages/kafka — KafkaJS client factory, typed producer/consumer helpers, and topic registry. Used by all microservices and the API gateway for event-driven communication.",
+  "name": "@caregiver/kafka",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "//dependencies": "kafkajs is the only Node.js Kafka client with full TypeScript support.",
+  "dependencies": {
+    "kafkajs": "^2.2.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

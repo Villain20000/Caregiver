@@ -1,0 +1,13 @@
+{
+  "//": "Prettier configuration — shared across all workspaces. Enforces single quotes, trailing commas, and 100-char print width for consistent formatting.",
+  "semi": true,
+  "singleQuote": true,
+  "trailingComma": "all",
+  "printWidth": 100,
+  "tabWidth": 2,
+  "useTabs": false,
+  "bracketSpacing": true,
+  "arrowParens": "always",
+  "endOfLine": "lf",
+  "quoteProps": "consistent"
+}

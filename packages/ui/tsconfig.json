@@ -1,0 +1,18 @@
+/**
+ * packages/ui/tsconfig.json
+ *
+ * Angular component library. Enables experimentalDecorators for Angular's
+ * decorator-based DI system. No project references — this is a leaf lib
+ * consumed by apps/web.
+ */
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    "experimentalDecorators": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules"]
+}

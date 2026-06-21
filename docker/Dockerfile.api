@@ -1,0 +1,42 @@
+# ─────────────────────────────────────────────────────────────
+# Dockerfile.api — Multi-stage build for the NestJS API Gateway
+#
+# Build context is the repo root (set in docker-compose.yml).
+# Three stages: deps → build → runtime (Alpine, minimal footprint).
+# ─────────────────────────────────────────────────────────────
+
+# Stage 1: Install dependencies.
+# Only copies package.json files so Docker can cache this layer
+# when source code changes but deps don't.
+FROM node:20.11-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json* ./
+# Copy all workspace package.json files for npm workspaces resolution.
+COPY apps/api/package.json ./apps/api/package.json
+COPY packages/contracts/package.json ./packages/contracts/package.json
+COPY packages/db/package.json ./packages/db/package.json
+COPY packages/fhir-types/package.json ./packages/fhir-types/package.json
+COPY packages/kafka/package.json ./packages/kafka/package.json
+COPY packages/rbac/package.json ./packages/rbac/package.json
+# Install only the API gateway workspace + its shared deps.
+RUN npm install --workspace @caregiver/api --include-workspace-root
+
+# Stage 2: Build the TypeScript source.
+# Copies source + tsconfig, then compiles to dist/.
+FROM node:20.11-alpine AS build
+WORKDIR /app
+COPY --from=deps /app ./
+COPY tsconfig.base.json tsconfig.json ./
+COPY apps/api ./apps/api
+COPY packages ./packages
+RUN npm run build --workspace @caregiver/api
+
+# Stage 3: Production runtime.
+# Slim Alpine image with only the compiled output + node_modules.
+FROM node:20.11-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=build /app ./
+EXPOSE 3000
+# Start the NestJS gateway (compiled CommonJS output).
+CMD ["node", "apps/api/dist/main.js"]

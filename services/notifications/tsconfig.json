@@ -1,0 +1,40 @@
+/**
+ * services/notifications/tsconfig.json
+ *
+ * Notifications microservice — the real-time alert engine.
+ *
+ * Consumes `vitals.recorded`, `appointment.created`, and
+ * `appointment.updated` from Kafka, evaluates clinical thresholds,
+ * persists alerts to Postgres (via @caregiver/db), and emits
+ * `alert.dispatched` + `audit.event` back to Kafka.
+ *
+ * Overrides module/moduleResolution to CommonJS/node10 because NestJS 10
+ * and its decorator metadata pipeline do not yet fully support native ESM.
+ * This is the same deviation used by the API gateway and other NestJS
+ * services in the monorepo.
+ *
+ * References: contracts (typed event payloads), db (Drizzle client +
+ * schema for alert persistence), kafka (typed producer/consumer +
+ * topic registry).
+ */
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    // CommonJS + node10 resolution for NestJS 10 compatibility.
+    "module": "CommonJS",
+    "moduleResolution": "node10",
+    // Required by NestJS dependency injection (reflect-metadata).
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "references": [
+    { "path": "../../packages/contracts" },
+    { "path": "../../packages/db" },
+    { "path": "../../packages/kafka" }
+  ],
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules", "**/*.spec.ts"]
+}

@@ -1,0 +1,28 @@
+/**
+ * services/fhir-ingestion/tsconfig.json
+ *
+ * FHIR ingestion microservice. Uses CommonJS (like the API gateway) for
+ * compatibility with the KafkaJS and Drizzle ORM CommonJS modules.
+ *
+ * References: contracts (event schemas), db (Drizzle client), fhir-types
+ * (R4 resource shapes), kafka (client wrapper + topic registry).
+ */
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    // CommonJS for KafkaJS/Drizzle compatibility.
+    "module": "CommonJS",
+    "moduleResolution": "Node"
+  },
+  "references": [
+    { "path": "../../packages/contracts" },
+    { "path": "../../packages/db" },
+    { "path": "../../packages/fhir-types" },
+    { "path": "../../packages/kafka" }
+  ],
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules", "**/*.spec.ts"]
+}

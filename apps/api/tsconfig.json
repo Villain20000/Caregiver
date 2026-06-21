@@ -1,0 +1,37 @@
+/**
+ * apps/api/tsconfig.json
+ *
+ * NestJS API Gateway workspace.
+ *
+ * Overrides module/moduleResolution to CommonJS/Node because NestJS 10
+ * does not yet fully support ESM. This is the only workspace that deviates
+ * from the root ESM settings — all other workspaces use ESNext/ESM.
+ *
+ * References all shared packages it consumes: contracts, db, fhir-types,
+ * kafka, and rbac.
+ *
+ * experimentalDecorators + emitDecoratorMetadata are required for NestJS's
+ * dependency injection system (reflect-metadata based).
+ */
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    // NestJS 10 requires CommonJS — override the root ESM settings.
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "references": [
+    { "path": "../../packages/contracts" },
+    { "path": "../../packages/db" },
+    { "path": "../../packages/fhir-types" },
+    { "path": "../../packages/kafka" },
+    { "path": "../../packages/rbac" }
+  ],
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules", "**/*.spec.ts"]
+}

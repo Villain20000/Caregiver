@@ -1,0 +1,17 @@
+{
+  "//": "packages/fhir-types — HL7 FHIR R4 TypeScript type definitions. Leaf package, no deps. Single source of truth for FHIR resource shapes.",
+  "name": "@caregiver/fhir-types",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

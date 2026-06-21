@@ -1,0 +1,41 @@
+/**
+ * services/audit/tsconfig.json
+ *
+ * Audit microservice — append-only compliance log.
+ *
+ * Overrides the root ESM settings to CommonJS / node10 module resolution
+ * because NestJS 10's DI runtime (reflect-metadata based) does not yet
+ * fully support native ESM. This mirrors the apps/api workspace, which is
+ * the only other CommonJS workspace in the monorepo.
+ *
+ * References the shared packages this service consumes:
+ *   - contracts → AuditEventPayload (the Kafka message payload type)
+ *   - db        → Drizzle client + schema (audit_log table, append-only)
+ *   - kafka     → typed consumer wrapper + topic registry (audit.event)
+ *
+ * This service writes to Postgres but ONLY to the audit_log table.
+ * It never updates or deletes — append-only by construction.
+ */
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    // NestJS 10 requires CommonJS — override the root ESNext/ESM settings.
+    "module": "CommonJS",
+    // node10 (formerly "node") — the classic Node.js resolution strategy,
+    // required for CommonJS interop with NestJS and KafkaJS.
+    "moduleResolution": "node10",
+    // NestJS DI relies on reflect-metadata emitted by these flags.
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "references": [
+    { "path": "../../packages/contracts" },
+    { "path": "../../packages/db" },
+    { "path": "../../packages/kafka" }
+  ],
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules", "**/*.spec.ts"]
+}

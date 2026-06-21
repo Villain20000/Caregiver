@@ -1,0 +1,46 @@
+/**
+ * packages/contracts/src/events/index.ts
+ *
+ * Event payload type map — binds each Kafka topic to its payload type.
+ *
+ * This enables end-to-end type safety: when a producer sends to a topic,
+ * TypeScript knows the exact payload shape. When a consumer subscribes
+ * to a topic, it receives a typed payload.
+ *
+ * @example
+ *   // Producer side:
+ *   producer.send('appointment.created', { patientId: '...', ... });
+ *   //                    ↑ topic         ↑ typed payload
+ *
+ *   // Consumer side:
+ *   consumer.subscribe('appointment.created', (envelope) => {
+ *     envelope.payload.patientId; // typed!
+ *   });
+ */
+import type { KafkaTopic } from '@caregiver/kafka';
+
+import type { FhirResourceIngestedPayload, FhirResourceValidatedPayload } from './fhir-events.js';
+import type { AppointmentCreatedPayload, AppointmentUpdatedPayload } from './appointment-events.js';
+import type { VitalsRecordedPayload } from './vitals-events.js';
+import type { AlertDispatchedPayload } from './alert-events.js';
+import type { AiDiagnosisRequestedPayload, AiDiagnosisCompletedPayload } from './ai-events.js';
+import type { AuditEventPayload } from './audit-events.js';
+
+/**
+ * Type map: KafkaTopic → payload type.
+ * Adding a new topic requires adding its payload type here.
+ */
+export interface EventPayloads {
+  'fhir.resource.ingested': FhirResourceIngestedPayload;
+  'fhir.resource.validated': FhirResourceValidatedPayload;
+  'appointment.created': AppointmentCreatedPayload;
+  'appointment.updated': AppointmentUpdatedPayload;
+  'vitals.recorded': VitalsRecordedPayload;
+  'alert.dispatched': AlertDispatchedPayload;
+  'ai.diagnosis.requested': AiDiagnosisRequestedPayload;
+  'ai.diagnosis.completed': AiDiagnosisCompletedPayload;
+  'audit.event': AuditEventPayload;
+}
+
+/** Helper type: get the payload type for a given topic. */
+export type PayloadOf<T extends KafkaTopic> = EventPayloads[T];

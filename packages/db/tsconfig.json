@@ -1,0 +1,18 @@
+/**
+ * packages/db/tsconfig.json
+ *
+ * Leaf package — no project references. The DB schema is foundational;
+ * apps/api and services (fhir-ingestion, audit) depend on it.
+ *
+ * Excludes the `drizzle/` directory (generated migration output).
+ */
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules", "drizzle"]
+}
