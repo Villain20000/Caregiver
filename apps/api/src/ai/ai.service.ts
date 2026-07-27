@@ -15,7 +15,7 @@
  *   2. Emit `audit.event` for the review action
  */
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { createDb, schema, type Database } from '@caregiver/db';
 import { KAFKA_PRODUCER } from '../kafka/kafka.module.js';
 import type { TypedProducer } from '@caregiver/kafka';
@@ -77,6 +77,19 @@ export class AiService {
     this.logger.log(`AI diagnosis ${diagnosis.id} requested by ${requestedBy}`);
 
     return this.toResponse(diagnosis);
+  }
+
+  /**
+   * List all diagnoses, newest first.
+   */
+  async findAll(limit = 100, offset = 0): Promise<AiDiagnosisResponse[]> {
+    const results = await this.db
+      .select()
+      .from(schema.aiDiagnoses)
+      .orderBy(desc(schema.aiDiagnoses.createdAt))
+      .limit(limit)
+      .offset(offset);
+    return results.map((r: typeof schema.aiDiagnoses.$inferSelect) => this.toResponse(r));
   }
 
   /**

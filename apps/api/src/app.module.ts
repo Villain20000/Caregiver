@@ -18,6 +18,7 @@ import { HealthModule } from './health/health.module.js';
 import { AppointmentModule } from './appointments/appointment.module.js';
 import { VitalsModule } from './vitals/vitals.module.js';
 import { AiModule } from './ai/ai.module.js';
+import { AuditModule } from './audit/audit.module.js';
 import { AlertsGateway } from './alerts/alerts.gateway.js';
 import { KafkaModule } from './kafka/kafka.module.js';
 
@@ -30,6 +31,7 @@ import { KafkaModule } from './kafka/kafka.module.js';
     AppointmentModule,
     VitalsModule,
     AiModule,
+    AuditModule,
   ],
   // WebSocket gateway — real-time alert delivery via Socket.io.
   providers: [AlertsGateway],

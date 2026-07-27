@@ -8,7 +8,7 @@
  * to send real-time alerts to patients and practitioners.
  */
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { createDb, schema, type Database } from '@caregiver/db';
 import { KAFKA_PRODUCER } from '../kafka/kafka.module.js';
 import type { TypedProducer } from '@caregiver/kafka';
@@ -73,6 +73,20 @@ export class AppointmentService {
     this.logger.log(`Appointment ${appointment.id} created by ${requestedBy}`);
 
     return this.toResponse(appointment);
+  }
+
+  /**
+   * List all appointments.
+   * Ordered by start time descending (most recent first).
+   */
+  async findAll(limit = 100, offset = 0): Promise<AppointmentResponse[]> {
+    const results = await this.db
+      .select()
+      .from(schema.appointments)
+      .orderBy(desc(schema.appointments.start))
+      .limit(limit)
+      .offset(offset);
+    return results.map((r: typeof schema.appointments.$inferSelect) => this.toResponse(r));
   }
 
   /**

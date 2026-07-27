@@ -7,14 +7,15 @@
  * The notifications microservice consumes `vitals.recorded` events to
  * check threshold breaches and dispatch real-time alerts.
  */
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { eq, desc } from 'drizzle-orm';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { eq, desc, gte, and } from 'drizzle-orm';
 import { createDb, schema, type Database } from '@caregiver/db';
 import { KAFKA_PRODUCER } from '../kafka/kafka.module.js';
 import type { TypedProducer } from '@caregiver/kafka';
 import type {
   RecordVitalsRequest,
   VitalsResponse,
+  VitalsTrendResponse,
   VitalsRecordedPayload,
 } from '@caregiver/contracts';
 
@@ -110,7 +111,55 @@ export class VitalsService {
       .orderBy(desc(schema.vitals.recordedAt))
       .limit(limit);
 
-    return results.map((v) => this.toResponse(v));
+    return results.map((v: typeof schema.vitals.$inferSelect) => this.toResponse(v));
+  }
+
+  /**
+   * Get vitals trend for a specific metric over a time period.
+   */
+  async getTrend(
+    patientId: string,
+    metric: string,
+    days = 7,
+  ): Promise<VitalsTrendResponse> {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const validMetrics = ['heartRate', 'systolicBp', 'diastolicBp', 'temperature', 'oxygenSaturation', 'respiratoryRate'] as const;
+    if (!validMetrics.includes(metric as typeof validMetrics[number])) {
+      throw new NotFoundException(`Invalid metric: ${metric}`);
+    }
+
+    const results = await this.db
+      .select()
+      .from(schema.vitals)
+      .where(
+        and(
+          eq(schema.vitals.patientId, patientId),
+          gte(schema.vitals.recordedAt, since),
+        ),
+      )
+      .orderBy(desc(schema.vitals.recordedAt));
+
+    const dataPoints = results
+      .map((r: typeof schema.vitals.$inferSelect) => {
+        const value = (r as Record<string, unknown>)[metric] as number | null;
+        if (value === null || value === undefined) return null;
+        return {
+          timestamp: r.recordedAt.toISOString(),
+          value: metric === 'temperature' ? value / 100 : value,
+        };
+      })
+      .filter((dp: { timestamp: string; value: number } | null): dp is { timestamp: string; value: number } => dp !== null);
+
+    if (dataPoints.length === 0) {
+      return { patientId, metric, dataPoints: [], min: 0, max: 0, average: 0 };
+    }
+
+    const values = dataPoints.map((dp: { timestamp: string; value: number }) => dp.value);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const average = values.reduce((a: number, b: number) => a + b, 0) / values.length;
+
+    return { patientId, metric, dataPoints, min, max, average };
   }
 
   /**

@@ -1,14 +1,4 @@
-/**
- * apps/web/src/app/pages/ai-diagnosis.component.ts
- *
- * AI Diagnosis page — standalone component for requesting and reviewing
- * AI-assisted diagnoses.
- *
- * For Phase 2, this is a simple form to submit a diagnosis request
- * and a list of recent diagnoses. Full review UI (approve/override)
- * will be built in Phase 3.
- */
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, type OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -24,7 +14,6 @@ import type { AiDiagnosisResponse, RequestDiagnosisRequest } from '@caregiver/co
       <h1>AI Diagnostics</h1>
       <p class="page-subtitle">Request AI-assisted diagnoses powered by RAG + Llama-3.</p>
 
-      <!-- Diagnosis request form (shown for roles with 'ai.request_diagnosis' permission). -->
       @if (canRequest()) {
         <div class="form-section">
           <h2>Request New Diagnosis</h2>
@@ -42,6 +31,9 @@ import type { AiDiagnosisResponse, RequestDiagnosisRequest } from '@caregiver/co
                 placeholder="Describe the clinical context or question for the AI..."
               ></textarea>
             </div>
+            @if (error()) {
+              <div class="error-msg">{{ error() }}</div>
+            }
             <button type="submit" [disabled]="requesting()" class="request-btn">
               {{ requesting() ? 'Requesting...' : 'Request Diagnosis' }}
             </button>
@@ -49,7 +41,6 @@ import type { AiDiagnosisResponse, RequestDiagnosisRequest } from '@caregiver/co
         </div>
       }
 
-      <!-- Recent diagnoses list. -->
       <div class="history-section">
         <h2>Recent Diagnoses</h2>
         @if (loading()) {
@@ -72,6 +63,12 @@ import type { AiDiagnosisResponse, RequestDiagnosisRequest } from '@caregiver/co
                     </div>
                   }
                 </div>
+                @if (d.status === 'completed' && canReview()) {
+                  <div class="review-actions">
+                    <button (click)="onReview(d.id, 'approve')" class="approve-btn">Approve</button>
+                    <button (click)="onReview(d.id, 'override')" class="override-btn">Override</button>
+                  </div>
+                }
               </div>
             }
           </div>
@@ -97,6 +94,7 @@ import type { AiDiagnosisResponse, RequestDiagnosisRequest } from '@caregiver/co
       width: 100%; padding: 0.5rem; border: 1px solid #ddd;
       border-radius: 4px; box-sizing: border-box; font-family: inherit;
     }
+    .error-msg { margin-bottom: 0.75rem; padding: 0.5rem; background: #ffebee; border-radius: 4px; color: #c62828; font-size: 0.8rem; }
     .request-btn {
       padding: 0.6rem 1.5rem; background: #1a237e; color: white;
       border: none; border-radius: 4px; cursor: pointer;
@@ -116,61 +114,96 @@ import type { AiDiagnosisResponse, RequestDiagnosisRequest } from '@caregiver/co
     .status-badge.completed { background: #e8f5e9; color: #2e7d32; }
     .status-badge.approved { background: #c8e6c9; color: #1b5e20; }
     .status-badge.overridden { background: #ffebee; color: #c62828; }
+    .status-badge.failed { background: #ffebee; color: #c62828; }
     .diagnosis-time { font-size: 0.75rem; color: #999; }
     .diagnosis-text { margin-top: 0.5rem; padding: 0.75rem; background: white; border-radius: 4px; }
     .diagnosis-text p { margin: 0.25rem 0 0; }
     .loading, .empty-state { text-align: center; color: #999; padding: 1rem; }
+    .review-actions { margin-top: 0.75rem; display: flex; gap: 0.5rem; }
+    .approve-btn, .override-btn {
+      padding: 0.3rem 0.7rem; border: 1px solid #ddd; border-radius: 4px;
+      cursor: pointer; font-size: 0.8rem;
+    }
+    .approve-btn { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+    .override-btn { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
   `],
 })
 export class AiDiagnosisComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
-  private readonly authService = inject(AuthService);
+  readonly authService = inject(AuthService);
 
-  // Diagnosis request form.
   readonly diagnosisForm = this.fb.nonNullable.group({
     patientId: ['', [Validators.required]],
     inputContext: ['', [Validators.required]],
   });
 
-  // State signals.
   readonly diagnoses = signal<AiDiagnosisResponse[]>([]);
   readonly loading = signal(true);
   readonly requesting = signal(false);
+  readonly error = signal<string | null>(null);
 
-  /** Whether the current user can request diagnoses (based on RBAC). */
   readonly canRequest = computed(() => {
     const role = this.authService.userRole();
     if (!role) return false;
     return role === 'doctor' || role === 'radiologist' || role === 'medical_director' || role === 'admin';
   });
 
+  readonly canReview = computed(() => {
+    const role = this.authService.userRole();
+    if (!role) return false;
+    return role === 'doctor' || role === 'medical_director' || role === 'admin';
+  });
+
   ngOnInit(): void {
-    this.loading.set(false);
+    this.loadDiagnoses();
   }
 
-  /** Handle diagnosis request form submission. */
+  private async loadDiagnoses(): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      const userId = this.authService.currentUser()?.id;
+      if (userId) {
+        const diagnoses = await this.http.get<AiDiagnosisResponse[]>(`/api/ai/diagnoses`).toPromise();
+        if (diagnoses) this.diagnoses.set(diagnoses);
+      }
+    } catch {
+      this.error.set('Failed to load diagnoses.');
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
   async onRequest(): Promise<void> {
     if (this.diagnosisForm.invalid) return;
-
     this.requesting.set(true);
+    this.error.set(null);
     try {
-      const formValue = this.diagnosisForm.getRawValue();
+      const fv = this.diagnosisForm.getRawValue();
       const req: RequestDiagnosisRequest = {
-        patientId: formValue.patientId,
-        inputContext: formValue.inputContext,
+        patientId: fv.patientId,
+        inputContext: fv.inputContext,
       };
-
       const result = await this.http.post<AiDiagnosisResponse>('/api/ai/diagnose', req).toPromise();
       if (result) {
-        // Prepend the new diagnosis to the list.
         this.diagnoses.update((prev) => [result, ...prev]);
         this.diagnosisForm.reset();
       }
     } catch {
-      // Error handling — show a toast in Phase 3.
+      this.error.set('Failed to request diagnosis.');
     } finally {
       this.requesting.set(false);
+    }
+  }
+
+  async onReview(id: string, decision: 'approve' | 'override'): Promise<void> {
+    this.error.set(null);
+    try {
+      const result = await this.http.post<AiDiagnosisResponse>(`/api/ai/diagnoses/${id}/review`, { decision }).toPromise();
+      if (result) this.diagnoses.update((prev) => prev.map((d) => d.id === id ? result : d));
+    } catch {
+      this.error.set('Failed to review diagnosis.');
     }
   }
 }

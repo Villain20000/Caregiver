@@ -7,24 +7,39 @@
  * Renders the <router-outlet> for route-based navigation.
  * Shows a top bar with the app name and user info when authenticated.
  */
-import { Component, inject } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from './services/auth.service.js';
+import { AlertService } from './services/alert.service.js';
+import { getRolePermissions, type Role } from '@caregiver/rbac';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   template: `
     <div class="app-shell">
-      <!-- Top navigation bar — shown on all routes. -->
       <header class="app-header">
         <div class="app-brand">
           <a routerLink="/">Caregiver</a>
           <span class="app-subtitle">Healthcare Intelligence Platform</span>
         </div>
 
-        <!-- User info + logout — shown only when authenticated. -->
+        @if (authService.currentUser()) {
+          <nav class="app-nav">
+            @if (navLinks().appointments) {
+              <a routerLink="/appointments" routerLinkActive="active-link">Appointments</a>
+            }
+            @if (navLinks().vitals) {
+              <a routerLink="/vitals" routerLinkActive="active-link">Vitals</a>
+            }
+            @if (navLinks().ai) {
+              <a routerLink="/ai" routerLinkActive="active-link">AI Diagnostics</a>
+            }
+          </nav>
+        }
+
         @if (authService.currentUser()) {
           <div class="app-user">
             <span class="user-name">{{ authService.currentUser()?.fullName }}</span>
@@ -34,7 +49,22 @@ import { AuthService } from './services/auth.service.js';
         }
       </header>
 
-      <!-- Routed content — lazy-loaded feature components render here. -->
+      @if (authService.currentUser() && alertService.alerts().length > 0) {
+        <div class="alert-bar">
+          <div class="alert-scroll">
+            @for (alert of alertService.alerts(); track alert.alertId) {
+              <div class="alert-item" [class]="'severity-' + alert.severity">
+                <span class="alert-msg">{{ alert.message }}</span>
+                <button (click)="alertService.acknowledge(alert.alertId)" class="alert-dismiss">&times;</button>
+              </div>
+            }
+          </div>
+          @if (alertService.alerts().length > 3) {
+            <button (click)="alertService.clear()" class="alert-clear-all">Clear all</button>
+          }
+        </div>
+      }
+
       <main class="app-content">
         <router-outlet />
       </main>
@@ -46,29 +76,69 @@ import { AuthService } from './services/auth.service.js';
       display: flex; justify-content: space-between; align-items: center;
       padding: 0 1.5rem; height: 64px;
       background: #1a237e; color: white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1); gap: 1.5rem;
     }
     .app-brand a { color: white; text-decoration: none; font-size: 1.25rem; font-weight: 600; }
-    .app-subtitle { margin-left: 0.5rem; font-size: 0.875rem; opacity: 0.7; }
-    .app-user { display: flex; align-items: center; gap: 1rem; }
-    .user-name { font-weight: 500; }
+    .app-subtitle { display: none; }
+    .app-nav { display: flex; gap: 0.25rem; flex: 1; justify-content: center; }
+    .app-nav a {
+      color: rgba(255,255,255,0.8); text-decoration: none; padding: 0.4rem 0.8rem;
+      border-radius: 4px; font-size: 0.875rem; transition: all 0.2s;
+    }
+    .app-nav a:hover { background: rgba(255,255,255,0.15); color: white; }
+    .app-nav a.active-link { background: rgba(255,255,255,0.2); color: white; font-weight: 600; }
+    .app-user { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+    .user-name { font-weight: 500; font-size: 0.875rem; }
     .user-role {
       padding: 0.25rem 0.5rem; border-radius: 4px;
-      background: rgba(255,255,255,0.2); font-size: 0.75rem; text-transform: uppercase;
+      background: rgba(255,255,255,0.2); font-size: 0.7rem; text-transform: uppercase;
     }
     .logout-btn {
       background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
-      color: white; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer;
+      color: white; padding: 0.35rem 0.7rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;
     }
     .logout-btn:hover { background: rgba(255,255,255,0.25); }
+    .alert-bar {
+      display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 1.5rem;
+      background: #fff8e1; border-bottom: 1px solid #ffe082; overflow: hidden;
+    }
+    .alert-scroll { display: flex; gap: 0.5rem; overflow-x: auto; flex: 1; padding: 0.25rem 0; }
+    .alert-item {
+      display: flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.6rem;
+      border-radius: 4px; font-size: 0.75rem; white-space: nowrap; flex-shrink: 0;
+    }
+    .alert-item.severity-critical { background: #ffebee; color: #c62828; }
+    .alert-item.severity-warning { background: #fff3e0; color: #e65100; }
+    .alert-item.severity-info { background: #e3f2fd; color: #1565c0; }
+    .alert-item.severity-emergency { background: #fce4ec; color: #880e4f; }
+    .alert-dismiss {
+      background: none; border: none; cursor: pointer; font-size: 1rem;
+      line-height: 1; padding: 0; color: inherit; opacity: 0.6;
+    }
+    .alert-dismiss:hover { opacity: 1; }
+    .alert-clear-all {
+      background: none; border: none; cursor: pointer; font-size: 0.7rem;
+      color: #666; white-space: nowrap; padding: 0.2rem 0.4rem;
+    }
+    .alert-clear-all:hover { color: #333; }
     .app-content { flex: 1; padding: 1.5rem; }
   `],
 })
 export class AppComponent {
-  // Inject the auth service — uses Angular's inject() function (modern API).
   readonly authService = inject(AuthService);
+  readonly alertService = inject(AlertService);
 
-  /** Logout the current user and redirect to login. */
+  readonly navLinks = computed(() => {
+    const role = this.authService.currentUser()?.role as Role | undefined;
+    if (!role) return { appointments: false, vitals: false, ai: false };
+    const perms = getRolePermissions(role);
+    return {
+      appointments: perms['appointment.schedule'] !== 'deny' || perms['appointment.view_by_patient'] !== 'deny',
+      vitals: perms['vitals.record'] !== 'deny' || perms['vitals.view'] !== 'deny',
+      ai: perms['ai.request_diagnosis'] !== 'deny' || perms['ai.view_diagnosis'] !== 'deny',
+    };
+  });
+
   logout(): void {
     this.authService.logout();
   }

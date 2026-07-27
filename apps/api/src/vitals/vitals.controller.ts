@@ -8,11 +8,11 @@
  *   GET  /api/vitals/patient/:patientId → get latest vitals (requires 'vitals.view')
  *   GET  /api/vitals/patient/:patientId/history → get history (requires 'vitals.view')
  */
-import { Body, Controller, Get, Param, Post, Query, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Request, UseGuards, DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RbacGuard, RequirePermission } from '../common/rbac.guard.js';
 import { VitalsService } from './vitals.service.js';
-import type { UserProfile, RecordVitalsRequest, VitalsResponse } from '@caregiver/contracts';
+import type { UserProfile, RecordVitalsRequest, VitalsResponse, VitalsTrendResponse } from '@caregiver/contracts';
 
 @Controller('vitals')
 @UseGuards(JwtAuthGuard, RbacGuard)
@@ -53,5 +53,19 @@ export class VitalsController {
     @Query('limit') limit?: string,
   ): Promise<VitalsResponse[]> {
     return this.vitalsService.getHistoryForPatient(patientId, limit ? parseInt(limit, 10) : 50);
+  }
+
+  /**
+   * GET /api/vitals/patient/:patientId/trend — get vitals trend for a metric.
+   * Requires 'vitals.view' permission.
+   */
+  @Get('patient/:patientId/trend')
+  @RequirePermission('vitals.view')
+  async getTrend(
+    @Param('patientId') patientId: string,
+    @Query('metric') metric: string,
+    @Query('days', new DefaultValuePipe(7), ParseIntPipe) days: number,
+  ): Promise<VitalsTrendResponse> {
+    return this.vitalsService.getTrend(patientId, metric, days);
   }
 }

@@ -10,7 +10,7 @@
  *   GET    /api/appointments/:id      → get by ID (requires 'appointment.view_by_patient')
  *   PATCH  /api/appointments/:id      → update (requires 'appointment.reschedule' or 'appointment.cancel')
  */
-import { Body, Controller, Get, Param, Patch, Post, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RbacGuard, RequirePermission } from '../common/rbac.guard.js';
 import { AppointmentService } from './appointment.service.js';
@@ -32,6 +32,22 @@ export class AppointmentController {
     @Request() req: { user: UserProfile },
   ): Promise<AppointmentResponse> {
     return this.appointmentService.create(body, req.user.id, req.user.role);
+  }
+
+  /**
+   * GET /api/appointments — list all appointments.
+   * Requires 'appointment.view_by_patient' or 'appointment.schedule' permission.
+   */
+  @Get()
+  @RequirePermission('appointment.view_by_patient')
+  async list(
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ): Promise<AppointmentResponse[]> {
+    return this.appointmentService.findAll(
+      limit ? parseInt(limit, 10) : 100,
+      offset ? parseInt(offset, 10) : 0,
+    );
   }
 
   /**

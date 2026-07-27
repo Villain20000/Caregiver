@@ -8,7 +8,7 @@
  *   GET  /api/ai/diagnoses/:id         → get diagnosis by ID (requires 'ai.view_diagnosis')
  *   POST /api/ai/diagnoses/:id/review  → review diagnosis (requires 'ai.approve_diagnosis' or 'ai.override_diagnosis')
  */
-import { Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RbacGuard, RequirePermission } from '../common/rbac.guard.js';
 import { AiService } from './ai.service.js';
@@ -30,6 +30,22 @@ export class AiController {
     @Request() req: { user: UserProfile },
   ): Promise<AiDiagnosisResponse> {
     return this.aiService.requestDiagnosis(body, req.user.id, req.user.role);
+  }
+
+  /**
+   * GET /api/ai/diagnoses — list all diagnoses (newest first).
+   * Requires 'ai.view_diagnosis' permission.
+   */
+  @Get('diagnoses')
+  @RequirePermission('ai.view_diagnosis')
+  async list(
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ): Promise<AiDiagnosisResponse[]> {
+    return this.aiService.findAll(
+      limit ? parseInt(limit, 10) : 100,
+      offset ? parseInt(offset, 10) : 0,
+    );
   }
 
   /**

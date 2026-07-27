@@ -16,14 +16,15 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { AlertService } from './alert.service.js';
 import type { LoginRequest, LoginResponse, UserProfile } from '@caregiver/contracts';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly alertService = inject(AlertService);
 
-  // API base URL — proxied to the NestJS gateway in dev (Angular CLI proxy).
   private readonly apiUrl = '/api';
 
   // ── Reactive state (Angular 17+ signals) ───────────────────
@@ -74,8 +75,8 @@ export class AuthService {
         this._token.set(token);
         this._refreshToken = refreshToken;
         this._currentUser.set(user);
+        this.alertService.connect();
       } catch {
-        // Corrupted localStorage — clear it.
         this.clearStorage();
       }
     }
@@ -101,13 +102,25 @@ export class AuthService {
     this._refreshToken = response.refreshToken;
     this._currentUser.set(response.user);
 
-    // Persist to localStorage for session restoration across refreshes.
     localStorage.setItem('caregiver_access_token', response.accessToken);
     localStorage.setItem('caregiver_refresh_token', response.refreshToken);
     localStorage.setItem('caregiver_user', JSON.stringify(response.user));
 
-    // Navigate to the dashboard.
+    this.alertService.connect();
     void this.router.navigate(['/dashboard']);
+  }
+
+  /**
+   * Exchange a refresh token for new access + refresh tokens.
+   */
+  async refreshToken(refreshToken: string): Promise<LoginResponse> {
+    const response = await this.http.post<LoginResponse>(`${this.apiUrl}/auth/refresh`, { refreshToken }).toPromise();
+    if (!response) throw new Error('Token refresh failed');
+    this._token.set(response.accessToken);
+    this._refreshToken = response.refreshToken;
+    localStorage.setItem('caregiver_access_token', response.accessToken);
+    localStorage.setItem('caregiver_refresh_token', response.refreshToken);
+    return response;
   }
 
   /**
@@ -118,6 +131,7 @@ export class AuthService {
     this._refreshToken = null;
     this._currentUser.set(null);
     this.clearStorage();
+    this.alertService.disconnect();
     void this.router.navigate(['/login']);
   }
 
