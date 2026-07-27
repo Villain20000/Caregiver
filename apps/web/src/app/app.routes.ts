@@ -16,6 +16,7 @@
 import { type Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard.js';
 
+/** Application route configuration consumed by the Angular router. */
 export const APP_ROUTES: Routes = [
   // Default route — redirect to dashboard (auth guard handles redirect to login).
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
@@ -53,6 +54,34 @@ export const APP_ROUTES: Routes = [
     path: 'ai',
     canActivate: [authGuard],
     loadComponent: () => import('./pages/ai-diagnosis.component.js').then((m) => m.AiDiagnosisComponent),
+  },
+
+  // FHIR resource viewer — protected, lazy-loaded.
+  {
+    path: 'fhir',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/fhir/fhir.component.js').then((m) => m.FhirComponent),
+  },
+
+  // Orders management — protected, lazy-loaded.
+  {
+    path: 'orders',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/orders/orders.component.js').then((m) => m.OrdersComponent),
+  },
+
+  // Billing & claims — protected, lazy-loaded.
+  {
+    path: 'billing',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/billing/billing.component.js').then((m) => m.BillingComponent),
+  },
+
+  // Audit trail — protected, lazy-loaded.
+  {
+    path: 'audit',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/audit.component.js').then((m) => m.AuditComponent),
   },
 
   // Wildcard route — redirect unknown paths to dashboard.

@@ -27,6 +27,10 @@ export const RESOURCE_TYPES = [
   'Claim',
   'ExplanationOfBenefit',
   'AuditEvent',
+  'Organization',
+  'Location',
+  'Condition',
+  'Medication',
 ] as const;
 
 /** Union type of all supported FHIR resource type strings. */

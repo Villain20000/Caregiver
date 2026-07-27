@@ -44,6 +44,24 @@ export const KAFKA_TOPICS = [
   /** Emitted by ai-rag after LLM + RAG processing completes. */
   'ai.diagnosis.completed',
 
+  // ── Order domain ──────────────────────────────────────────
+  /** Emitted when a new order is created (lab, imaging, medication). */
+  'order.created',
+  /** Emitted when an order is filled by a pharmacist. */
+  'order.filled',
+  /** Emitted when a medication is dispensed. */
+  'order.dispensed',
+
+  // ── Claim domain ──────────────────────────────────────────
+  /** Emitted when a new insurance claim is created. */
+  'claim.created',
+  /** Emitted when a claim is submitted to an insurer. */
+  'claim.submitted',
+  /** Emitted when a claim is adjudicated. */
+  'claim.adjudicated',
+  /** Emitted when a payment is posted. */
+  'payment.posted',
+
   // ── Audit domain ──────────────────────────────────────────
   /** Every state-changing event is mirrored here for the audit microservice. */
   'audit.event',

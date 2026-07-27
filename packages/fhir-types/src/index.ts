@@ -50,6 +50,12 @@ export type * from './resources/claim.js';
 export type * from './resources/explanation-of-benefit.js';
 export type * from './resources/audit-event.js';
 
+// ── Additional resource types ────────────────────────────────
+export type * from './resources/organization.js';
+export type * from './resources/location.js';
+export type * from './resources/condition.js';
+export type * from './resources/medication.js';
+
 // ── Convenience re-exports of resource types ─────────────────
 export type { Patient } from './resources/patient.js';
 export type { Practitioner } from './resources/practitioner.js';
@@ -63,3 +69,7 @@ export type { ServiceRequest } from './resources/service-request.js';
 export type { Claim } from './resources/claim.js';
 export type { ExplanationOfBenefit } from './resources/explanation-of-benefit.js';
 export type { AuditEvent } from './resources/audit-event.js';
+export type { Organization } from './resources/organization.js';
+export type { Location } from './resources/location.js';
+export type { Condition } from './resources/condition.js';
+export type { Medication } from './resources/medication.js';

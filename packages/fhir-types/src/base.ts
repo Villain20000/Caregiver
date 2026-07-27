@@ -302,6 +302,25 @@ export interface Reference {
 }
 
 // ══════════════════════════════════════════════════════════════
+// DATATYPE: Annotation
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * FHIR `Annotation` — a text note which also has information about who made it
+ * and when.
+ */
+export interface Annotation {
+  /** The individual responsible for the annotation. */
+  authorString?: FhirString;
+  /** Reference to the author (Practitioner/Patient/RelatedPerson). */
+  authorReference?: Reference;
+  /** When the annotation was made. */
+  time?: FhirDateTime;
+  /** The annotation text (markdown permitted). */
+  text: FhirString;
+}
+
+// ══════════════════════════════════════════════════════════════
 // BASE RESOURCE TYPES
 // ══════════════════════════════════════════════════════════════
 

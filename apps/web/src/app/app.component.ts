@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from './services/auth.service.js';
 import { AlertService } from './services/alert.service.js';
-import { getRolePermissions, type Role } from '@caregiver/rbac';
+import { getRolePermissions, type Role, type Feature } from '@caregiver/rbac';
 
 @Component({
   selector: 'app-root',
@@ -36,6 +36,18 @@ import { getRolePermissions, type Role } from '@caregiver/rbac';
             }
             @if (navLinks().ai) {
               <a routerLink="/ai" routerLinkActive="active-link">AI Diagnostics</a>
+            }
+            @if (navLinks().fhir) {
+              <a routerLink="/fhir" routerLinkActive="active-link">FHIR</a>
+            }
+            @if (navLinks().orders) {
+              <a routerLink="/orders" routerLinkActive="active-link">Orders</a>
+            }
+            @if (navLinks().billing) {
+              <a routerLink="/billing" routerLinkActive="active-link">Billing</a>
+            }
+            @if (navLinks().audit) {
+              <a routerLink="/audit" routerLinkActive="active-link">Audit</a>
             }
           </nav>
         }
@@ -128,17 +140,30 @@ export class AppComponent {
   readonly authService = inject(AuthService);
   readonly alertService = inject(AlertService);
 
+  /**
+   * Map of top-level navigation links that should be visible to the current user.
+   *
+   * A link is enabled when the user's role has at least one non-denied permission
+   * in the corresponding feature domain. This keeps the UI aligned with the
+   * RBAC matrix in `packages/rbac` without hard-coding per-role checks.
+   */
   readonly navLinks = computed(() => {
     const role = this.authService.currentUser()?.role as Role | undefined;
-    if (!role) return { appointments: false, vitals: false, ai: false };
+    if (!role) return { appointments: false, vitals: false, ai: false, fhir: false, orders: false, billing: false, audit: false };
     const perms = getRolePermissions(role);
+    const hasAny = (...features: Feature[]) => features.some((f) => perms[f] !== 'deny');
     return {
-      appointments: perms['appointment.schedule'] !== 'deny' || perms['appointment.view_by_patient'] !== 'deny',
-      vitals: perms['vitals.record'] !== 'deny' || perms['vitals.view'] !== 'deny',
-      ai: perms['ai.request_diagnosis'] !== 'deny' || perms['ai.view_diagnosis'] !== 'deny',
+      appointments: hasAny('appointment.schedule', 'appointment.view_by_patient'),
+      vitals: hasAny('vitals.record', 'vitals.view'),
+      ai: hasAny('ai.request_diagnosis', 'ai.view_diagnosis'),
+      fhir: hasAny('fhir.view', 'fhir.search'),
+      orders: hasAny('order.lab_create', 'order.imaging_create', 'order.medication_create', 'order.fill', 'order.dispense'),
+      billing: hasAny('billing.claim_create', 'billing.claim_submit', 'billing.adjudicate', 'billing.post_payment', 'billing.denial_report'),
+      audit: hasAny('audit.read_log'),
     };
   });
 
+  /** Signs the current user out and clears any active session state. */
   logout(): void {
     this.authService.logout();
   }

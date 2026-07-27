@@ -207,6 +207,68 @@ export const aiDiagnoses = pgTable('ai_diagnoses', {
 });
 
 // ══════════════════════════════════════════════════════════════
+// ORDERS TABLE
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Orders table — lab, imaging, and medication orders.
+ * Mirrors key fields from FHIR R4 ServiceRequest and MedicationRequest.
+ */
+export const orders = pgTable('orders', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  fhirId: varchar('fhir_id', { length: 64 }),
+  patientId: uuid('patient_id')
+    .notNull()
+    .references(() => users.id),
+  practitionerId: uuid('practitioner_id')
+    .notNull()
+    .references(() => users.id),
+  orderType: varchar('order_type', { length: 32 }).notNull(), // lab, imaging, medication
+  status: varchar('status', { length: 32 }).notNull().default('active'),
+  code: varchar('code', { length: 64 }).notNull(),
+  display: varchar('display', { length: 255 }).notNull(),
+  reason: text('reason'),
+  notes: text('notes'),
+  priority: varchar('priority', { length: 32 }).notNull().default('routine'),
+  filledBy: uuid('filled_by').references(() => users.id),
+  dispensedBy: uuid('dispensed_by').references(() => users.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ══════════════════════════════════════════════════════════════
+// BILLING / CLAIMS TABLE
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Claims table — insurance claims and payments.
+ * Mirrors key fields from FHIR R4 Claim and ExplanationOfBenefit.
+ */
+export const claims = pgTable('claims', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  fhirId: varchar('fhir_id', { length: 64 }),
+  patientId: uuid('patient_id')
+    .notNull()
+    .references(() => users.id),
+  providerId: uuid('provider_id')
+    .notNull()
+    .references(() => users.id),
+  insurerId: varchar('insurer_id', { length: 255 }).notNull(),
+  status: varchar('status', { length: 32 }).notNull().default('draft'),
+  type: varchar('type', { length: 32 }).notNull(),
+  use: varchar('use', { length: 32 }).notNull(),
+  totalAmount: integer('total_amount').notNull().default(0),
+  amountApproved: integer('amount_approved'),
+  amountPaid: integer('amount_paid'),
+  items: jsonb('items'),
+  submittedAt: timestamp('submitted_at', { withTimezone: true }),
+  adjudicatedAt: timestamp('adjudicated_at', { withTimezone: true }),
+  paidAt: timestamp('paid_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ══════════════════════════════════════════════════════════════
 // OPERATIONS TABLES
 // ══════════════════════════════════════════════════════════════
 
@@ -283,6 +345,8 @@ export const schema = {
   vitals,
   fhirResources,
   aiDiagnoses,
+  orders,
+  claims,
   alerts,
   auditLog,
 };

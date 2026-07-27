@@ -16,6 +16,8 @@ export type * from './events/vitals-events.js';
 export type * from './events/alert-events.js';
 export type * from './events/ai-events.js';
 export type * from './events/audit-events.js';
+export type * from './events/order-events.js';
+export type * from './events/billing-events.js';
 
 // ── Event payload type map ───────────────────────────────────
 export type { EventPayloads, PayloadOf } from './events/index.js';
@@ -25,3 +27,6 @@ export type * from './dto/auth.dto.js';
 export type * from './dto/appointment.dto.js';
 export type * from './dto/vitals.dto.js';
 export type * from './dto/ai-diagnosis.dto.js';
+export type * from './dto/order.dto.js';
+export type * from './dto/billing.dto.js';
+export type * from './dto/audit.dto.js';

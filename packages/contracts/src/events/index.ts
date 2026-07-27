@@ -25,6 +25,12 @@ import type { VitalsRecordedPayload } from './vitals-events.js';
 import type { AlertDispatchedPayload } from './alert-events.js';
 import type { AiDiagnosisRequestedPayload, AiDiagnosisCompletedPayload } from './ai-events.js';
 import type { AuditEventPayload } from './audit-events.js';
+import type { OrderCreatedPayload, OrderFilledPayload, OrderDispensedPayload } from './order-events.js';
+import type { ClaimCreatedPayload, ClaimSubmittedPayload, ClaimAdjudicatedPayload, PaymentPostedPayload } from './billing-events.js';
+
+// Re-export for consumer convenience
+export type { OrderCreatedPayload, OrderFilledPayload, OrderDispensedPayload } from './order-events.js';
+export type { ClaimCreatedPayload, ClaimSubmittedPayload, ClaimAdjudicatedPayload, PaymentPostedPayload } from './billing-events.js';
 
 /**
  * Type map: KafkaTopic → payload type.
@@ -40,6 +46,13 @@ export interface EventPayloads {
   'ai.diagnosis.requested': AiDiagnosisRequestedPayload;
   'ai.diagnosis.completed': AiDiagnosisCompletedPayload;
   'audit.event': AuditEventPayload;
+  'order.created': OrderCreatedPayload;
+  'order.filled': OrderFilledPayload;
+  'order.dispensed': OrderDispensedPayload;
+  'claim.created': ClaimCreatedPayload;
+  'claim.submitted': ClaimSubmittedPayload;
+  'claim.adjudicated': ClaimAdjudicatedPayload;
+  'payment.posted': PaymentPostedPayload;
 }
 
 /** Helper type: get the payload type for a given topic. */
