@@ -42,9 +42,14 @@ export default [
   // ----------------------------------------------------------------------
   // TypeScript: @typescript-eslint/recommended (flat variant).
   // This array sets up the plugin + parser and applies recommended rules
-  // to **/*.ts (and variants).
+  // to **/*.ts (and variants). We explicitly scope each block to TS files so
+  // that generated Angular template files (e.g. inline HTML) are not linted
+  // by TypeScript-specific rules.
   // ----------------------------------------------------------------------
-  ...tseslint.configs['flat/recommended'],
+  ...tseslint.configs['flat/recommended'].map((config) => ({
+    ...config,
+    files: config.files ?? ['**/*.ts', '**/*.tsx'],
+  })),
 
   // ----------------------------------------------------------------------
   // TypeScript-specific language options & custom rules for all TS files.

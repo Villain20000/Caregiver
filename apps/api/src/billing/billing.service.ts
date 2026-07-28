@@ -14,7 +14,6 @@ import type {
   ClaimSubmittedPayload,
   ClaimAdjudicatedPayload,
   PaymentPostedPayload,
-  AuditEventPayload,
 } from '@caregiver/contracts';
 
 @Injectable()
@@ -244,14 +243,15 @@ export class BillingService {
       totalAmount: Number(row.totalAmount),
       amountApproved: row.amountApproved ? Number(row.amountApproved) : undefined,
       amountPaid: row.amountPaid ? Number(row.amountPaid) : undefined,
-      items: (row.items as Array<Record<string, unknown>>)?.map((item) => ({
-        serviceCode: item.serviceCode as string,
-        quantity: Number(item.quantity),
-        unitPrice: Number(item.unitPrice),
-        netAmount: Number(item.netAmount),
-        amountApproved: item.amountApproved ? Number(item.amountApproved) : undefined,
-        denialReason: item.denialReason as string | undefined,
-      })) ?? [],
+      items:
+        (row.items as Array<Record<string, unknown>>)?.map((item) => ({
+          serviceCode: item.serviceCode as string,
+          quantity: Number(item.quantity),
+          unitPrice: Number(item.unitPrice),
+          netAmount: Number(item.netAmount),
+          amountApproved: item.amountApproved ? Number(item.amountApproved) : undefined,
+          denialReason: item.denialReason as string | undefined,
+        })) ?? [],
       submittedAt: row.submittedAt?.toISOString(),
       adjudicatedAt: row.adjudicatedAt?.toISOString(),
       paidAt: row.paidAt?.toISOString(),

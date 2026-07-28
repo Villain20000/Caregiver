@@ -5,6 +5,23 @@
   "description": "Healthcare Intelligence Platform — event-driven, FHIR-compliant, AI-augmented. Angular + NestJS + Drizzle + Kafka + ChromaDB + Ollama.",
   "private": true,
   "type": "module",
+  "lint-staged": {
+    "apps/**/*.{ts,html}": [
+      "eslint --fix --max-warnings=0",
+      "prettier --write"
+    ],
+    "services/**/*.ts": [
+      "eslint --fix --max-warnings=0",
+      "prettier --write"
+    ],
+    "packages/**/*.ts": [
+      "eslint --fix --max-warnings=0",
+      "prettier --write"
+    ],
+    "*.{js,mjs,cjs,json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
   "//engines": "Pin Node 20 LTS — required by NestJS 10 and Angular 17.",
   "engines": {
     "node": ">=20.11.0",
@@ -49,16 +66,21 @@
     "docker:logs": "docker compose -f docker/docker-compose.yml logs -f",
     "docker:rebuild": "docker compose -f docker/docker-compose.yml up -d --build",
     "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
-    "postinstall": "echo 'Caregiver platform workspaces installed.'"
+    "postinstall": "echo 'Caregiver platform workspaces installed.'",
+    "prepare": "husky"
   },
   "//devDependencies": "Root-level tooling only. Per-workspace deps live in each workspace's package.json.",
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@playwright/test": "^1.48.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
+    "axe-core": "^4.12.1",
     "concurrently": "^9.0.0",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^9.1.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.2.0",
     "prettier": "^3.3.3",
     "typescript": "~5.4.0"
   }

@@ -1,4 +1,12 @@
-import type { DomainResource, Identifier, CodeableConcept, Reference, Period, Annotation, FhirDateTime, FhirCode } from '../base.js';
+import type {
+  DomainResource,
+  Identifier,
+  CodeableConcept,
+  Reference,
+  Period,
+  Annotation,
+  FhirDateTime,
+} from '../base.js';
 
 export interface Condition extends DomainResource {
   resourceType: 'Condition';

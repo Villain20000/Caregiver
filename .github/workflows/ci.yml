@@ -45,6 +45,10 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # Angular ESLint for the web app, including inline component templates.
+      - name: Lint web app
+        run: npm run lint --workspace @caregiver/web
+
       # TypeScript type checking without emitting (catches type errors).
       - name: Typecheck
         run: npm run typecheck

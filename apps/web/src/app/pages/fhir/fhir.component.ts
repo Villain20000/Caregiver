@@ -9,8 +9,16 @@
 import { Component, inject, signal, computed, type OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service.js';
-import { FhirService, type FhirResourceResponse, type IngestSummary } from '../../services/fhir.service.js';
-import { FhirSearchComponent, type FhirSearchCriteria, type FhirIngestPayload } from './fhir-search.component.js';
+import {
+  FhirService,
+  type FhirResourceResponse,
+  type IngestSummary,
+} from '../../services/fhir.service.js';
+import {
+  FhirSearchComponent,
+  type FhirSearchCriteria,
+  type FhirIngestPayload,
+} from './fhir-search.component.js';
 import { FhirResourceListComponent } from './fhir-resource-list.component.js';
 
 @Component({
@@ -32,28 +40,43 @@ import { FhirResourceListComponent } from './fhir-resource-list.component.js';
         [loading]="loading()"
         [ingesting]="ingesting()"
         [ingestResult]="ingestResult()"
-        (search)="onSearch($event)"
-        (ingest)="onIngest($event)"
+        (searchResources)="onSearch($event)"
+        (ingestBundle)="onIngest($event)"
       />
 
       <app-fhir-resource-list
         [resources]="resources()"
         [loading]="loading()"
         [expandedId]="expandedId()"
-        (toggle)="toggleResource($event)"
+        (toggleResource)="toggleResource($event)"
       />
     </div>
   `,
-  styles: [`
-    .page { max-width: 1200px; margin: 0 auto; }
-    h1 { color: #1a237e; margin-bottom: 0.25rem; }
-    .page-subtitle { color: #666; margin-top: 0; }
-    .error-banner {
-      margin-top: 1rem; padding: 0.75rem; background: #ffebee;
-      border: 1px solid #ef9a9a; border-radius: 4px;
-      color: #c62828; font-size: 0.875rem;
-    }
-  `],
+  styles: [
+    `
+      .page {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      h1 {
+        color: #1a237e;
+        margin-bottom: 0.25rem;
+      }
+      .page-subtitle {
+        color: #666;
+        margin-top: 0;
+      }
+      .error-banner {
+        margin-top: 1rem;
+        padding: 0.75rem;
+        background: #ffebee;
+        border: 1px solid #ef9a9a;
+        border-radius: 4px;
+        color: #c62828;
+        font-size: 0.875rem;
+      }
+    `,
+  ],
 })
 export class FhirComponent implements OnInit {
   private readonly authService = inject(AuthService);
@@ -115,10 +138,9 @@ export class FhirComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const resources = await this.fhirService.searchResources(
-        criteria.resourceType || undefined,
-        criteria.search || undefined,
-      ).toPromise();
+      const resources = await this.fhirService
+        .searchResources(criteria.resourceType || undefined, criteria.search || undefined)
+        .toPromise();
       this.resources.set(resources ?? []);
       this.expandedId.set(null);
     } catch {

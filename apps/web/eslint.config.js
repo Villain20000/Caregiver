@@ -19,6 +19,8 @@ export default [
   // Angular TypeScript files.
   // Applies the @angular-eslint recommended rules and enables inline-template
   // extraction so templates defined in `template:` properties are linted too.
+  // The extracted virtual HTML files are then matched by the `**/*.html`
+  // block below, so only Angular template rules run against them.
   // ----------------------------------------------------------------------
   {
     files: ['src/**/*.ts'],
@@ -30,12 +32,10 @@ export default [
     },
     plugins: {
       '@angular-eslint': angular,
-      '@angular-eslint/template': angularTemplate,
     },
     processor: angularTemplate.processors['extract-inline-html'],
     rules: {
       ...angular.configs.recommended.rules,
-      ...angularTemplate.configs['process-inline-templates'].rules,
     },
   },
 
@@ -52,6 +52,7 @@ export default [
     },
     rules: {
       ...angularTemplate.configs.recommended.rules,
+      ...angularTemplate.configs.accessibility.rules,
     },
   },
 ];

@@ -70,11 +70,21 @@ export interface FhirIngestPayload {
           <form [formGroup]="ingestForm" (ngSubmit)="onIngest()">
             <div class="form-field">
               <label for="sourceSystem">Source System</label>
-              <input id="sourceSystem" type="text" formControlName="sourceSystem" placeholder="e.g. epic, cerner" />
+              <input
+                id="sourceSystem"
+                type="text"
+                formControlName="sourceSystem"
+                placeholder="e.g. epic, cerner"
+              />
             </div>
             <div class="form-field">
               <label for="bundleJson">FHIR Bundle JSON</label>
-              <textarea id="bundleJson" formControlName="bundleJson" rows="6" placeholder="Paste a FHIR Bundle JSON..."></textarea>
+              <textarea
+                id="bundleJson"
+                formControlName="bundleJson"
+                rows="6"
+                placeholder="Paste a FHIR Bundle JSON..."
+              ></textarea>
             </div>
             <button type="submit" [disabled]="ingesting()" class="primary-btn">
               {{ ingesting() ? 'Ingesting...' : 'Ingest Bundle' }}
@@ -87,31 +97,72 @@ export interface FhirIngestPayload {
       }
     </div>
   `,
-  styles: [`
-    .search-panel { display: grid; gap: 1.5rem; }
-    .form-section {
-      padding: 1.5rem; background: white; border: 1px solid #e0e0e0;
-      border-radius: 8px;
-    }
-    h2 { margin-top: 0; color: #333; font-size: 1.1rem; }
-    .form-row { display: flex; gap: 1rem; margin-bottom: 1rem; }
-    .form-field { flex: 1; }
-    .form-field label { display: block; margin-bottom: 0.3rem; font-size: 0.8rem; font-weight: 500; }
-    .form-field input, .form-field textarea, .form-field select {
-      width: 100%; padding: 0.5rem; border: 1px solid #ddd;
-      border-radius: 4px; box-sizing: border-box; font-family: inherit;
-    }
-    .primary-btn {
-      padding: 0.6rem 1.5rem; background: #1a237e; color: white;
-      border: none; border-radius: 4px; cursor: pointer;
-    }
-    .primary-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    .ingest-result {
-      margin-top: 0.75rem; padding: 0.5rem; background: #e8f5e9;
-      border-radius: 4px; color: #2e7d32; font-size: 0.875rem;
-    }
-    .ingest-section { border-left: 4px solid #1a237e; }
-  `],
+  styles: [
+    `
+      .search-panel {
+        display: grid;
+        gap: 1.5rem;
+      }
+      .form-section {
+        padding: 1.5rem;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+      }
+      h2 {
+        margin-top: 0;
+        color: #333;
+        font-size: 1.1rem;
+      }
+      .form-row {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+      .form-field {
+        flex: 1;
+      }
+      .form-field label {
+        display: block;
+        margin-bottom: 0.3rem;
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+      .form-field input,
+      .form-field textarea,
+      .form-field select {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-family: inherit;
+      }
+      .primary-btn {
+        padding: 0.6rem 1.5rem;
+        background: #1a237e;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .primary-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .ingest-result {
+        margin-top: 0.75rem;
+        padding: 0.5rem;
+        background: #e8f5e9;
+        border-radius: 4px;
+        color: #2e7d32;
+        font-size: 0.875rem;
+      }
+      .ingest-section {
+        border-left: 4px solid #1a237e;
+      }
+    `,
+  ],
 })
 export class FhirSearchComponent {
   private readonly fb = inject(FormBuilder);
@@ -128,9 +179,9 @@ export class FhirSearchComponent {
   readonly ingestResult = input<string | null>(null);
 
   /** Emitted when the user submits a new search. */
-  readonly search = output<FhirSearchCriteria>();
+  readonly searchResources = output<FhirSearchCriteria>();
   /** Emitted when the user submits a bundle for ingestion. */
-  readonly ingest = output<FhirIngestPayload>();
+  readonly ingestBundle = output<FhirIngestPayload>();
 
   /** Reactive form for resource search filters. */
   readonly searchForm = this.fb.nonNullable.group({
@@ -157,7 +208,7 @@ export class FhirSearchComponent {
   onSearch(): void {
     if (this.searchForm.invalid) return;
     const value = this.searchForm.getRawValue();
-    this.search.emit({
+    this.searchResources.emit({
       resourceType: value.resourceType,
       search: value.search,
     });
@@ -167,7 +218,7 @@ export class FhirSearchComponent {
   onIngest(): void {
     if (this.ingestForm.invalid) return;
     const value = this.ingestForm.getRawValue();
-    this.ingest.emit({
+    this.ingestBundle.emit({
       sourceSystem: value.sourceSystem,
       bundleJson: value.bundleJson,
     });

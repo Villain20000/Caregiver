@@ -9,7 +9,11 @@
 import { Component, inject, signal, computed, type OnInit } from '@angular/core';
 import { AuthService } from '../../services/auth.service.js';
 import { BillingService } from '../../services/billing.service.js';
-import type { ClaimResponse, CreateClaimRequest, BillingSummaryResponse } from '@caregiver/contracts';
+import type {
+  ClaimResponse,
+  CreateClaimRequest,
+  BillingSummaryResponse,
+} from '@caregiver/contracts';
 import { BillingSummaryComponent } from './billing-summary.component.js';
 import { BillingCreateClaimComponent } from './billing-create-claim.component.js';
 import { BillingClaimsListComponent } from './billing-claims-list.component.js';
@@ -42,22 +46,37 @@ import { BillingClaimsListComponent } from './billing-claims-list.component.js';
         [loading]="loading()"
         [canSubmitPay]="canSubmitPay()"
         [canAdjudicate]="canAdjudicate()"
-        (submit)="onSubmitClaim($event)"
+        (submitClaim)="onSubmitClaim($event)"
         (adjudicate)="onAdjudicate($event)"
         (pay)="onPayment($event)"
       />
     </div>
   `,
-  styles: [`
-    .page { max-width: 1200px; margin: 0 auto; }
-    h1 { color: #1a237e; margin-bottom: 0.25rem; }
-    .page-subtitle { color: #666; margin-top: 0; }
-    .error-banner {
-      margin-top: 1rem; padding: 0.75rem; background: #ffebee;
-      border: 1px solid #ef9a9a; border-radius: 4px;
-      color: #c62828; font-size: 0.875rem;
-    }
-  `],
+  styles: [
+    `
+      .page {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      h1 {
+        color: #1a237e;
+        margin-bottom: 0.25rem;
+      }
+      .page-subtitle {
+        color: #666;
+        margin-top: 0;
+      }
+      .error-banner {
+        margin-top: 1rem;
+        padding: 0.75rem;
+        background: #ffebee;
+        border: 1px solid #ef9a9a;
+        border-radius: 4px;
+        color: #c62828;
+        font-size: 0.875rem;
+      }
+    `,
+  ],
 })
 export class BillingComponent implements OnInit {
   private readonly authService = inject(AuthService);
@@ -72,7 +91,12 @@ export class BillingComponent implements OnInit {
 
   readonly canCreateClaim = computed(() => {
     const role = this.authService.userRole();
-    return role === 'admin' || role === 'pharmacist' || role === 'billing_specialist' || role === 'medical_director';
+    return (
+      role === 'admin' ||
+      role === 'pharmacist' ||
+      role === 'billing_specialist' ||
+      role === 'medical_director'
+    );
   });
 
   readonly canSubmitPay = computed(() => {
@@ -147,19 +171,25 @@ export class BillingComponent implements OnInit {
     void this.doAdjudicate(claim, Number(amountApproved), Number(amountDenied));
   }
 
-  private async doAdjudicate(claim: ClaimResponse, approved: number, denied: number): Promise<void> {
+  private async doAdjudicate(
+    claim: ClaimResponse,
+    approved: number,
+    denied: number,
+  ): Promise<void> {
     this.error.set(null);
     try {
       const totalNet = claim.items.reduce((sum, item) => sum + (item.netAmount ?? 0), 0);
       const lineItems = claim.items.map((item) => {
-        const ratio = totalNet > 0 ? ((item.netAmount ?? 0) / totalNet) : 1 / claim.items.length;
+        const ratio = totalNet > 0 ? (item.netAmount ?? 0) / totalNet : 1 / claim.items.length;
         return {
           serviceCode: item.serviceCode,
           amountApproved: Math.round(approved * ratio * 100) / 100,
           amountDenied: Math.round(denied * ratio * 100) / 100,
         };
       });
-      const result = await this.billingService.adjudicateClaim(claim.id, approved > 0 ? 'adjudicated' : 'denied', lineItems).toPromise();
+      const result = await this.billingService
+        .adjudicateClaim(claim.id, approved > 0 ? 'adjudicated' : 'denied', lineItems)
+        .toPromise();
       if (result) this.updateClaim(result);
     } catch {
       this.error.set('Failed to adjudicate claim.');
@@ -176,7 +206,9 @@ export class BillingComponent implements OnInit {
     this.error.set(null);
     try {
       const today = new Date().toISOString().split('T')[0] ?? '';
-      const result = await this.billingService.postPayment(claim.id, amount, today, 'check').toPromise();
+      const result = await this.billingService
+        .postPayment(claim.id, amount, today, 'check')
+        .toPromise();
       if (result) this.updateClaim(result);
     } catch {
       this.error.set('Failed to post payment.');

@@ -1,4 +1,11 @@
-import type { DomainResource, Identifier, CodeableConcept, Ratio, Quantity, Reference, FhirCode, FhirDateTime } from '../base.js';
+import type {
+  DomainResource,
+  Identifier,
+  CodeableConcept,
+  Ratio,
+  Reference,
+  FhirDateTime,
+} from '../base.js';
 
 export interface Medication extends DomainResource {
   resourceType: 'Medication';

@@ -13,7 +13,6 @@ import type {
   OrderCreatedPayload,
   OrderFilledPayload,
   OrderDispensedPayload,
-  AuditEventPayload,
 } from '@caregiver/contracts';
 
 @Injectable()
@@ -37,8 +36,9 @@ export class OrdersService {
         practitionerId: req.practitionerId,
         orderType: req.orderType,
         status: 'active',
-        code: 'code' in req ? req.code : ('medicationCode' in req ? req.medicationCode : ''),
-        display: 'display' in req ? req.display : ('medicationDisplay' in req ? req.medicationDisplay : ''),
+        code: 'code' in req ? req.code : 'medicationCode' in req ? req.medicationCode : '',
+        display:
+          'display' in req ? req.display : 'medicationDisplay' in req ? req.medicationDisplay : '',
         reason: req.reason ?? null,
         notes: req.notes ?? null,
         priority: req.priority ?? 'routine',
@@ -84,7 +84,12 @@ export class OrdersService {
 
     const [updated] = await this.db
       .update(schema.orders)
-      .set({ status: 'completed', filledBy: req.pharmacistId || filledBy, notes: req.notes ?? current.notes, updatedAt: new Date() })
+      .set({
+        status: 'completed',
+        filledBy: req.pharmacistId || filledBy,
+        notes: req.notes ?? current.notes,
+        updatedAt: new Date(),
+      })
       .where(eq(schema.orders.id, id))
       .returning();
 
@@ -122,7 +127,12 @@ export class OrdersService {
 
     const [updated] = await this.db
       .update(schema.orders)
-      .set({ status: 'completed', dispensedBy: req.pharmacistId || dispensedBy, notes: req.notes ?? current.notes, updatedAt: new Date() })
+      .set({
+        status: 'completed',
+        dispensedBy: req.pharmacistId || dispensedBy,
+        notes: req.notes ?? current.notes,
+        updatedAt: new Date(),
+      })
       .where(eq(schema.orders.id, id))
       .returning();
 
