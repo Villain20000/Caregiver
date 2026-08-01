@@ -10,7 +10,7 @@
     "start": "node dist/main.js",
     "dev": "tsx watch src/main.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "//dependencies": "NestJS 10 on Express as the application host (DI + lifecycle hooks). ChromaDB for vector storage / similarity search. Ollama reached via its REST API (native fetch) for local LLM inference. KafkaJS (via @caregiver/kafka) for event consumption/production. Drizzle ORM + postgres driver (via @caregiver/db) to update the ai_diagnoses table through the diagnosis lifecycle. reflect-metadata + rxjs required by NestJS runtime.",

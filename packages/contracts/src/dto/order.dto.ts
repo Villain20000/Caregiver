@@ -1,3 +1,14 @@
+/**
+ * packages/contracts/src/dto/order.dto.ts
+ *
+ * REST DTOs for clinical orders (lab, imaging, medication).
+ *
+ * 📝 Learning Note: Each order type has its own create DTO with specific
+ * fields (e.g. bodySite for imaging, dosageInstructions for medication).
+ * The `CreateOrderRequest` union type encompasses all three.
+ */
+
+/** Create lab order request — POST /api/orders/lab. */
 export interface CreateLabOrderRequest {
   patientId: string;
   practitionerId: string;
@@ -38,7 +49,10 @@ export interface CreateMedicationOrderRequest {
   priority?: 'routine' | 'urgent' | 'asap' | 'stat';
 }
 
-export type CreateOrderRequest = CreateLabOrderRequest | CreateImagingOrderRequest | CreateMedicationOrderRequest;
+export type CreateOrderRequest =
+  | CreateLabOrderRequest
+  | CreateImagingOrderRequest
+  | CreateMedicationOrderRequest;
 
 export interface FillOrderRequest {
   pharmacistId: string;

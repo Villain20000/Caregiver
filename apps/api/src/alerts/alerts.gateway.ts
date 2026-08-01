@@ -1,3 +1,22 @@
+/**
+ * apps/api/src/alerts/alerts.gateway.ts
+ *
+ * Socket.io WebSocket gateway — real-time alert delivery to Angular clients.
+ *
+ * 📝 NestJS Concepts Demonstrated:
+ *   - **@WebSocketGateway()** — decorator to create a Socket.io server
+ *   - **@WebSocketServer()** — decorator to get the Socket.io Server instance
+ *   - **OnGatewayConnection/Disconnect** — lifecycle hooks for client events
+ *   - **@SubscribeMessage()** — listen for client-emitted events
+ *   - **JWT authentication** via handshake.auth.token on connection
+ *   - **Socket rooms** for role-based fan-out (`role:doctor`, `user:123`)
+ *
+ * Flow:
+ *   1. Client connects with JWT in handshake.auth
+ *   2. Server verifies JWT → client joins `role:<role>` + `user:<userId>` rooms
+ *   3. `broadcastAlert()` is called by the Kafka consumer (alert.dispatched)
+ *   4. Server emits 'alert' event to the appropriate rooms
+ */
 import {
   WebSocketGateway,
   WebSocketServer,

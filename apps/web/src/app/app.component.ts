@@ -12,6 +12,8 @@ import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from './services/auth.service.js';
 import { AlertService } from './services/alert.service.js';
+import { ThemeService } from './services/theme.service.js';
+import { PatientFavoritesService } from './services/patient-favorites.service.js';
 import { getRolePermissions, type Role, type Feature } from '@caregiver/rbac';
 
 @Component({
@@ -40,6 +42,9 @@ import { getRolePermissions, type Role, type Feature } from '@caregiver/rbac';
             @if (navLinks().fhir) {
               <a routerLink="/fhir" routerLinkActive="active-link">FHIR</a>
             }
+            @if (navLinks().labResults) {
+              <a routerLink="/lab-results" routerLinkActive="active-link">Lab Results</a>
+            }
             @if (navLinks().orders) {
               <a routerLink="/orders" routerLinkActive="active-link">Orders</a>
             }
@@ -56,10 +61,43 @@ import { getRolePermissions, type Role, type Feature } from '@caregiver/rbac';
           <div class="app-user">
             <span class="user-name">{{ authService.currentUser()?.fullName }}</span>
             <span class="user-role">{{ authService.currentUser()?.role }}</span>
+            <button
+              (click)="themeService.toggle()"
+              class="icon-btn"
+              [title]="themeService.isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+            >
+              {{ themeService.isDark() ? '☀️' : '🌙' }}
+            </button>
+            <a routerLink="/settings" class="settings-link" title="Settings">⚙️</a>
             <button (click)="logout()" class="logout-btn">Logout</button>
           </div>
         }
       </header>
+
+      @if (authService.currentUser()) {
+        <div class="favorites-bar">
+          <div class="favorites-scroll">
+            @for (fav of favoritesService.favorites(); track fav.patientId) {
+              <button
+                class="fav-chip"
+                (click)="openPatient(fav.patientId)"
+                [title]="fav.patientName || fav.patientId"
+              >
+                <span class="fav-icon">👤</span>
+                <span class="fav-name">{{ fav.patientName || fav.patientId }}</span>
+                <span
+                  class="fav-remove"
+                  (click)="$event.stopPropagation(); favoritesService.removeFavorite(fav.patientId)"
+                  >&times;</span
+                >
+              </button>
+            }
+            @if (favoritesService.favorites().length === 0) {
+              <span class="fav-hint">Pin patients to access them quickly</span>
+            }
+          </div>
+        </div>
+      }
 
       @if (authService.currentUser() && alertService.alerts().length > 0) {
         <div class="alert-bar">
@@ -67,7 +105,9 @@ import { getRolePermissions, type Role, type Feature } from '@caregiver/rbac';
             @for (alert of alertService.alerts(); track alert.alertId) {
               <div class="alert-item" [class]="'severity-' + alert.severity">
                 <span class="alert-msg">{{ alert.message }}</span>
-                <button (click)="alertService.acknowledge(alert.alertId)" class="alert-dismiss">&times;</button>
+                <button (click)="alertService.acknowledge(alert.alertId)" class="alert-dismiss">
+                  &times;
+                </button>
               </div>
             }
           </div>
@@ -82,63 +122,248 @@ import { getRolePermissions, type Role, type Feature } from '@caregiver/rbac';
       </main>
     </div>
   `,
-  styles: [`
-    .app-shell { display: flex; flex-direction: column; min-height: 100vh; }
-    .app-header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 0 1.5rem; height: 64px;
-      background: #1a237e; color: white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1); gap: 1.5rem;
-    }
-    .app-brand a { color: white; text-decoration: none; font-size: 1.25rem; font-weight: 600; }
-    .app-subtitle { display: none; }
-    .app-nav { display: flex; gap: 0.25rem; flex: 1; justify-content: center; }
-    .app-nav a {
-      color: rgba(255,255,255,0.8); text-decoration: none; padding: 0.4rem 0.8rem;
-      border-radius: 4px; font-size: 0.875rem; transition: all 0.2s;
-    }
-    .app-nav a:hover { background: rgba(255,255,255,0.15); color: white; }
-    .app-nav a.active-link { background: rgba(255,255,255,0.2); color: white; font-weight: 600; }
-    .app-user { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
-    .user-name { font-weight: 500; font-size: 0.875rem; }
-    .user-role {
-      padding: 0.25rem 0.5rem; border-radius: 4px;
-      background: rgba(255,255,255,0.2); font-size: 0.7rem; text-transform: uppercase;
-    }
-    .logout-btn {
-      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
-      color: white; padding: 0.35rem 0.7rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;
-    }
-    .logout-btn:hover { background: rgba(255,255,255,0.25); }
-    .alert-bar {
-      display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 1.5rem;
-      background: #fff8e1; border-bottom: 1px solid #ffe082; overflow: hidden;
-    }
-    .alert-scroll { display: flex; gap: 0.5rem; overflow-x: auto; flex: 1; padding: 0.25rem 0; }
-    .alert-item {
-      display: flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.6rem;
-      border-radius: 4px; font-size: 0.75rem; white-space: nowrap; flex-shrink: 0;
-    }
-    .alert-item.severity-critical { background: #ffebee; color: #c62828; }
-    .alert-item.severity-warning { background: #fff3e0; color: #e65100; }
-    .alert-item.severity-info { background: #e3f2fd; color: #1565c0; }
-    .alert-item.severity-emergency { background: #fce4ec; color: #880e4f; }
-    .alert-dismiss {
-      background: none; border: none; cursor: pointer; font-size: 1rem;
-      line-height: 1; padding: 0; color: inherit; opacity: 0.6;
-    }
-    .alert-dismiss:hover { opacity: 1; }
-    .alert-clear-all {
-      background: none; border: none; cursor: pointer; font-size: 0.7rem;
-      color: #666; white-space: nowrap; padding: 0.2rem 0.4rem;
-    }
-    .alert-clear-all:hover { color: #333; }
-    .app-content { flex: 1; padding: 1.5rem; }
-  `],
+  styles: [
+    `
+      .app-shell {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      .app-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 1.5rem;
+        height: 64px;
+        background: #1a237e;
+        color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        gap: 1.5rem;
+      }
+      .app-brand a {
+        color: white;
+        text-decoration: none;
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+      .app-subtitle {
+        display: none;
+      }
+      .app-nav {
+        display: flex;
+        gap: 0.25rem;
+        flex: 1;
+        justify-content: center;
+      }
+      .app-nav a {
+        color: rgba(255, 255, 255, 0.8);
+        text-decoration: none;
+        padding: 0.4rem 0.8rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+      }
+      .app-nav a:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+      }
+      .app-nav a.active-link {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        font-weight: 600;
+      }
+      .app-user {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-shrink: 0;
+      }
+      .user-name {
+        font-weight: 500;
+        font-size: 0.875rem;
+      }
+      .user-role {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.2);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+      }
+      .logout-btn {
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 0.35rem 0.7rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.8rem;
+      }
+      .logout-btn:hover {
+        background: rgba(255, 255, 255, 0.25);
+      }
+      .alert-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 1.5rem;
+        background: #fff8e1;
+        border-bottom: 1px solid #ffe082;
+        overflow: hidden;
+      }
+      .alert-scroll {
+        display: flex;
+        gap: 0.5rem;
+        overflow-x: auto;
+        flex: 1;
+        padding: 0.25rem 0;
+      }
+      .alert-item {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .alert-item.severity-critical {
+        background: #ffebee;
+        color: #c62828;
+      }
+      .alert-item.severity-warning {
+        background: #fff3e0;
+        color: #e65100;
+      }
+      .alert-item.severity-info {
+        background: #e3f2fd;
+        color: #1565c0;
+      }
+      .alert-item.severity-emergency {
+        background: #fce4ec;
+        color: #880e4f;
+      }
+      .alert-dismiss {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+        line-height: 1;
+        padding: 0;
+        color: inherit;
+        opacity: 0.6;
+      }
+      .alert-dismiss:hover {
+        opacity: 1;
+      }
+      .alert-clear-all {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 0.7rem;
+        color: #666;
+        white-space: nowrap;
+        padding: 0.2rem 0.4rem;
+      }
+      .alert-clear-all:hover {
+        color: #333;
+      }
+      .app-content {
+        flex: 1;
+        padding: 1.5rem;
+      }
+      .icon-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.1rem;
+        padding: 0.2rem;
+        line-height: 1;
+        opacity: 0.8;
+        transition: opacity 0.15s;
+      }
+      .icon-btn:hover {
+        opacity: 1;
+      }
+      .settings-link {
+        color: white;
+        text-decoration: none;
+        font-size: 1.1rem;
+        opacity: 0.8;
+        transition: opacity 0.15s;
+        line-height: 1;
+      }
+      .settings-link:hover {
+        opacity: 1;
+      }
+      .favorites-bar {
+        display: flex;
+        align-items: center;
+        padding: 0.2rem 1.5rem;
+        background: var(--color-primary-bg);
+        border-bottom: 1px solid var(--color-primary-light);
+        overflow: hidden;
+        min-height: 36px;
+      }
+      .favorites-scroll {
+        display: flex;
+        gap: 0.4rem;
+        overflow-x: auto;
+        flex: 1;
+        align-items: center;
+        padding: 0.15rem 0;
+      }
+      .fav-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.15rem 0.5rem;
+        background: white;
+        border: 1px solid var(--color-border);
+        border-radius: 9999px;
+        cursor: pointer;
+        font-size: 0.75rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+        transition: all 0.15s;
+      }
+      .fav-chip:hover {
+        border-color: var(--color-primary);
+        background: var(--color-primary-surface);
+      }
+      .fav-icon {
+        font-size: 0.7rem;
+      }
+      .fav-name {
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .fav-remove {
+        margin-left: 0.1rem;
+        font-size: 0.9rem;
+        line-height: 1;
+        opacity: 0.4;
+        cursor: pointer;
+        color: var(--color-text-muted);
+      }
+      .fav-remove:hover {
+        opacity: 1;
+        color: var(--color-error);
+      }
+      .fav-hint {
+        font-size: 0.75rem;
+        color: var(--color-text-muted);
+        opacity: 0.7;
+      }
+    `,
+  ],
 })
 export class AppComponent {
   readonly authService = inject(AuthService);
   readonly alertService = inject(AlertService);
+  readonly themeService = inject(ThemeService);
+  readonly favoritesService = inject(PatientFavoritesService);
 
   /**
    * Map of top-level navigation links that should be visible to the current user.
@@ -149,7 +374,17 @@ export class AppComponent {
    */
   readonly navLinks = computed(() => {
     const role = this.authService.currentUser()?.role as Role | undefined;
-    if (!role) return { appointments: false, vitals: false, ai: false, fhir: false, orders: false, billing: false, audit: false };
+    if (!role)
+      return {
+        appointments: false,
+        vitals: false,
+        ai: false,
+        fhir: false,
+        labResults: false,
+        orders: false,
+        billing: false,
+        audit: false,
+      };
     const perms = getRolePermissions(role);
     const hasAny = (...features: Feature[]) => features.some((f) => perms[f] !== 'deny');
     return {
@@ -157,11 +392,30 @@ export class AppComponent {
       vitals: hasAny('vitals.record', 'vitals.view'),
       ai: hasAny('ai.request_diagnosis', 'ai.view_diagnosis'),
       fhir: hasAny('fhir.view', 'fhir.search'),
-      orders: hasAny('order.lab_create', 'order.imaging_create', 'order.medication_create', 'order.fill', 'order.dispense'),
-      billing: hasAny('billing.claim_create', 'billing.claim_submit', 'billing.adjudicate', 'billing.post_payment', 'billing.denial_report'),
+      labResults: hasAny('fhir.view', 'fhir.search'),
+      orders: hasAny(
+        'order.lab_create',
+        'order.imaging_create',
+        'order.medication_create',
+        'order.fill',
+        'order.dispense',
+      ),
+      billing: hasAny(
+        'billing.claim_create',
+        'billing.claim_submit',
+        'billing.adjudicate',
+        'billing.post_payment',
+        'billing.denial_report',
+      ),
       audit: hasAny('audit.read_log'),
     };
   });
+
+  /** Open a patient summary page (future feature). */
+  openPatient(_patientId: string): void {
+    // Navigate to patient summary page once it exists
+    // void this.router.navigate(['/patient', patientId]);
+  }
 
   /** Signs the current user out and clears any active session state. */
   logout(): void {

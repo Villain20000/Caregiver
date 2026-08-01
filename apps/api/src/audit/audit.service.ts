@@ -1,3 +1,20 @@
+/**
+ * apps/api/src/audit/audit.service.ts
+ *
+ * Audit service — read-only queries against the audit_log table.
+ *
+ * 📝 NestJS Concepts Demonstrated:
+ *   - **@Injectable()** service for data access
+ *   - **Drizzle ORM** for typed PostgreSQL queries
+ *   - **Type inference** with `typeof schema.auditLog.$inferSelect`
+ *
+ * This service provides filtered, paginated access to the append-only
+ * audit log. It only performs SELECTs — the audit `INSERT` happens in
+ * the audit microservice via Kafka events.
+ *
+ * The audit_log table is immutable (write-once-read-many). This is
+ * enforced at the DB level for HIPAA compliance.
+ */
 import { Injectable, Logger } from '@nestjs/common';
 import { eq, desc, and } from 'drizzle-orm';
 import { createDb, schema, type Database } from '@caregiver/db';
@@ -46,11 +63,20 @@ export class AuditService {
     return results.map((r: typeof schema.auditLog.$inferSelect) => this.toEntry(r));
   }
 
-  async getByResource(resourceType: string, resourceId: string, limit = 100): Promise<AuditLogEntry[]> {
+  async getByResource(
+    resourceType: string,
+    resourceId: string,
+    limit = 100,
+  ): Promise<AuditLogEntry[]> {
     const results = await this.db
       .select()
       .from(schema.auditLog)
-      .where(and(eq(schema.auditLog.resourceType, resourceType), eq(schema.auditLog.resourceId, resourceId)))
+      .where(
+        and(
+          eq(schema.auditLog.resourceType, resourceType),
+          eq(schema.auditLog.resourceId, resourceId),
+        ),
+      )
       .orderBy(desc(schema.auditLog.occurredAt))
       .limit(limit);
     return results.map((r: typeof schema.auditLog.$inferSelect) => this.toEntry(r));

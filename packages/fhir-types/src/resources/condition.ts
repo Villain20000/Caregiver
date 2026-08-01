@@ -1,3 +1,13 @@
+/**
+ * packages/fhir-types/src/resources/condition.ts
+ *
+ * FHIR R4 `Condition` resource — a clinical condition, problem, diagnosis,
+ * or other event that has occurred or is ongoing (e.g. diabetes, hypertension).
+ *
+ * Used by: Doctor, Nurse roles (for diagnosis/problem list tracking).
+ *
+ * @see https://hl7.org/fhir/R4/condition.html
+ */
 import type {
   DomainResource,
   Identifier,
@@ -8,6 +18,7 @@ import type {
   FhirDateTime,
 } from '../base.js';
 
+/** FHIR R4 Condition resource. */
 export interface Condition extends DomainResource {
   resourceType: 'Condition';
   identifier?: Identifier[];

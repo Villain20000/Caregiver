@@ -1,3 +1,21 @@
+/**
+ * apps/web/src/app/pages/ai-diagnosis.component.ts
+ *
+ * AI Diagnostics page — request AI-assisted diagnoses and review results.
+ *
+ * 📝 Angular Concepts Demonstrated:
+ *   - **Standalone component** with `imports` array (no NgModule!)
+ *   - **Signals** for reactive state: loading, error, data arrays
+ *   - **Computed signals** for role-based feature visibility
+ *   - **Reactive forms** with FormBuilder + Validators
+ *   - **@if/@for template control flow** (Angular 17+ syntax)
+ *   - **Dependency injection** via inject() function
+ *   - **HttpClient** for API calls
+ *   - **async/await** with toPromise() for cleaner code
+ *
+ * RBAC: Only doctors, radiologists, medical directors, and admins
+ * can request diagnoses. Doctors and medical directors can review.
+ */
 import { Component, inject, signal, computed, type OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
@@ -52,7 +70,7 @@ import type { AiDiagnosisResponse, RequestDiagnosisRequest } from '@caregiver/co
               <div class="diagnosis-card">
                 <div class="diagnosis-header">
                   <span class="status-badge" [class]="d.status">{{ d.status }}</span>
-                  <span class="diagnosis-time">{{ d.createdAt | date:'short' }}</span>
+                  <span class="diagnosis-time">{{ d.createdAt | date: 'short' }}</span>
                 </div>
                 <div class="diagnosis-body">
                   <p><strong>Patient:</strong> {{ d.patientId }}</p>
@@ -66,7 +84,9 @@ import type { AiDiagnosisResponse, RequestDiagnosisRequest } from '@caregiver/co
                 @if (d.status === 'completed' && canReview()) {
                   <div class="review-actions">
                     <button (click)="onReview(d.id, 'approve')" class="approve-btn">Approve</button>
-                    <button (click)="onReview(d.id, 'override')" class="override-btn">Override</button>
+                    <button (click)="onReview(d.id, 'override')" class="override-btn">
+                      Override
+                    </button>
                   </div>
                 }
               </div>
@@ -79,54 +99,159 @@ import type { AiDiagnosisResponse, RequestDiagnosisRequest } from '@caregiver/co
       </div>
     </div>
   `,
-  styles: [`
-    .page { max-width: 900px; margin: 0 auto; }
-    h1 { color: #1a237e; }
-    .page-subtitle { color: #666; margin-top: 0; }
-    .form-section, .history-section {
-      margin-top: 1.5rem; padding: 1.5rem; background: white;
-      border: 1px solid #e0e0e0; border-radius: 8px;
-    }
-    h2 { margin-top: 0; color: #333; font-size: 1.1rem; }
-    .form-field { margin-bottom: 1rem; }
-    .form-field label { display: block; margin-bottom: 0.3rem; font-size: 0.8rem; font-weight: 500; }
-    .form-field input, .form-field textarea {
-      width: 100%; padding: 0.5rem; border: 1px solid #ddd;
-      border-radius: 4px; box-sizing: border-box; font-family: inherit;
-    }
-    .error-msg { margin-bottom: 0.75rem; padding: 0.5rem; background: #ffebee; border-radius: 4px; color: #c62828; font-size: 0.8rem; }
-    .request-btn {
-      padding: 0.6rem 1.5rem; background: #1a237e; color: white;
-      border: none; border-radius: 4px; cursor: pointer;
-    }
-    .request-btn:disabled { opacity: 0.6; }
-    .diagnosis-list { display: flex; flex-direction: column; gap: 0.75rem; }
-    .diagnosis-card {
-      padding: 1rem; background: #f5f5f5; border-radius: 6px;
-    }
-    .diagnosis-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
-    .status-badge {
-      padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem;
-      text-transform: uppercase; font-weight: 600;
-    }
-    .status-badge.requested { background: #fff3e0; color: #e65100; }
-    .status-badge.processing { background: #e3f2fd; color: #1565c0; }
-    .status-badge.completed { background: #e8f5e9; color: #2e7d32; }
-    .status-badge.approved { background: #c8e6c9; color: #1b5e20; }
-    .status-badge.overridden { background: #ffebee; color: #c62828; }
-    .status-badge.failed { background: #ffebee; color: #c62828; }
-    .diagnosis-time { font-size: 0.75rem; color: #999; }
-    .diagnosis-text { margin-top: 0.5rem; padding: 0.75rem; background: white; border-radius: 4px; }
-    .diagnosis-text p { margin: 0.25rem 0 0; }
-    .loading, .empty-state { text-align: center; color: #999; padding: 1rem; }
-    .review-actions { margin-top: 0.75rem; display: flex; gap: 0.5rem; }
-    .approve-btn, .override-btn {
-      padding: 0.3rem 0.7rem; border: 1px solid #ddd; border-radius: 4px;
-      cursor: pointer; font-size: 0.8rem;
-    }
-    .approve-btn { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
-    .override-btn { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
-  `],
+  styles: [
+    `
+      .page {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      h1 {
+        color: #1a237e;
+      }
+      .page-subtitle {
+        color: #666;
+        margin-top: 0;
+      }
+      .form-section,
+      .history-section {
+        margin-top: 1.5rem;
+        padding: 1.5rem;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+      }
+      h2 {
+        margin-top: 0;
+        color: #333;
+        font-size: 1.1rem;
+      }
+      .form-field {
+        margin-bottom: 1rem;
+      }
+      .form-field label {
+        display: block;
+        margin-bottom: 0.3rem;
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+      .form-field input,
+      .form-field textarea {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-family: inherit;
+      }
+      .error-msg {
+        margin-bottom: 0.75rem;
+        padding: 0.5rem;
+        background: #ffebee;
+        border-radius: 4px;
+        color: #c62828;
+        font-size: 0.8rem;
+      }
+      .request-btn {
+        padding: 0.6rem 1.5rem;
+        background: #1a237e;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .request-btn:disabled {
+        opacity: 0.6;
+      }
+      .diagnosis-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .diagnosis-card {
+        padding: 1rem;
+        background: #f5f5f5;
+        border-radius: 6px;
+      }
+      .diagnosis-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+      }
+      .status-badge {
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+      .status-badge.requested {
+        background: #fff3e0;
+        color: #e65100;
+      }
+      .status-badge.processing {
+        background: #e3f2fd;
+        color: #1565c0;
+      }
+      .status-badge.completed {
+        background: #e8f5e9;
+        color: #2e7d32;
+      }
+      .status-badge.approved {
+        background: #c8e6c9;
+        color: #1b5e20;
+      }
+      .status-badge.overridden {
+        background: #ffebee;
+        color: #c62828;
+      }
+      .status-badge.failed {
+        background: #ffebee;
+        color: #c62828;
+      }
+      .diagnosis-time {
+        font-size: 0.75rem;
+        color: #999;
+      }
+      .diagnosis-text {
+        margin-top: 0.5rem;
+        padding: 0.75rem;
+        background: white;
+        border-radius: 4px;
+      }
+      .diagnosis-text p {
+        margin: 0.25rem 0 0;
+      }
+      .loading,
+      .empty-state {
+        text-align: center;
+        color: #999;
+        padding: 1rem;
+      }
+      .review-actions {
+        margin-top: 0.75rem;
+        display: flex;
+        gap: 0.5rem;
+      }
+      .approve-btn,
+      .override-btn {
+        padding: 0.3rem 0.7rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.8rem;
+      }
+      .approve-btn {
+        background: #e8f5e9;
+        color: #2e7d32;
+        border-color: #a5d6a7;
+      }
+      .override-btn {
+        background: #ffebee;
+        color: #c62828;
+        border-color: #ef9a9a;
+      }
+    `,
+  ],
 })
 export class AiDiagnosisComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
@@ -146,7 +271,9 @@ export class AiDiagnosisComponent implements OnInit {
   readonly canRequest = computed(() => {
     const role = this.authService.userRole();
     if (!role) return false;
-    return role === 'doctor' || role === 'radiologist' || role === 'medical_director' || role === 'admin';
+    return (
+      role === 'doctor' || role === 'radiologist' || role === 'medical_director' || role === 'admin'
+    );
   });
 
   readonly canReview = computed(() => {
@@ -165,7 +292,9 @@ export class AiDiagnosisComponent implements OnInit {
     try {
       const userId = this.authService.currentUser()?.id;
       if (userId) {
-        const diagnoses = await this.http.get<AiDiagnosisResponse[]>(`/api/ai/diagnoses`).toPromise();
+        const diagnoses = await this.http
+          .get<AiDiagnosisResponse[]>(`/api/ai/diagnoses`)
+          .toPromise();
         if (diagnoses) this.diagnoses.set(diagnoses);
       }
     } catch {
@@ -200,8 +329,10 @@ export class AiDiagnosisComponent implements OnInit {
   async onReview(id: string, decision: 'approve' | 'override'): Promise<void> {
     this.error.set(null);
     try {
-      const result = await this.http.post<AiDiagnosisResponse>(`/api/ai/diagnoses/${id}/review`, { decision }).toPromise();
-      if (result) this.diagnoses.update((prev) => prev.map((d) => d.id === id ? result : d));
+      const result = await this.http
+        .post<AiDiagnosisResponse>(`/api/ai/diagnoses/${id}/review`, { decision })
+        .toPromise();
+      if (result) this.diagnoses.update((prev) => prev.map((d) => (d.id === id ? result : d)));
     } catch {
       this.error.set('Failed to review diagnosis.');
     }

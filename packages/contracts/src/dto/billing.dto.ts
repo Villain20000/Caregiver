@@ -1,3 +1,15 @@
+/**
+ * packages/contracts/src/dto/billing.dto.ts
+ *
+ * REST DTOs for billing and insurance claim endpoints.
+ *
+ * 📝 Learning Note: DTOs (Data Transfer Objects) define the shape of data
+ * flowing between the Angular frontend and NestJS backend over HTTP.
+ * They are shared via the @caregiver/contracts package so both frontend
+ * and backend use the SAME types — eliminating mismatches!
+ */
+
+/** Create claim request body — POST /api/billing/claims. */
 export interface CreateClaimRequest {
   patientId: string;
   providerId: string;

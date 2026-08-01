@@ -1,8 +1,38 @@
+/**
+ * apps/api/src/billing/billing.controller.ts
+ *
+ * Billing controller — REST endpoints for insurance claims and payments.
+ *
+ * 📝 NestJS Concepts Demonstrated:
+ *   - **@Controller('billing')** — all endpoints prefixed with /api/billing
+ *   - **@UseGuards(JwtAuthGuard, RbacGuard)** — class-level auth
+ *   - **@RequirePermission()** — granular RBAC on each route
+ *   - **@Body()** — request body extraction
+ *   - **@Request() req** — access authenticated user from JWT
+ *   - **@Query()** — query string parameters for pagination
+ *
+ * Endpoints:
+ *   POST /api/billing/claims              → create (requires 'billing.claim_create')
+ *   POST /api/billing/claims/:id/submit   → submit (requires 'billing.claim_submit')
+ *   POST /api/billing/adjudicate          → adjudicate (requires 'billing.adjudicate')
+ *   POST /api/billing/payments            → post payment (requires 'billing.post_payment')
+ *   GET  /api/billing/claims              → list claims
+ *   GET  /api/billing/claims/:id          → get claim by ID
+ *   GET  /api/billing/summary             → aggregated statistics
+ */
 import { Body, Controller, Get, Param, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RbacGuard, RequirePermission } from '../common/rbac.guard.js';
 import { BillingService } from './billing.service.js';
-import type { UserProfile, CreateClaimRequest, SubmitClaimRequest, AdjudicateClaimRequest, PostPaymentRequest, ClaimResponse, BillingSummaryResponse } from '@caregiver/contracts';
+import type {
+  UserProfile,
+  CreateClaimRequest,
+  SubmitClaimRequest,
+  AdjudicateClaimRequest,
+  PostPaymentRequest,
+  ClaimResponse,
+  BillingSummaryResponse,
+} from '@caregiver/contracts';
 
 @Controller('billing')
 @UseGuards(JwtAuthGuard, RbacGuard)

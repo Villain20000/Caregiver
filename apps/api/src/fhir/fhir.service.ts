@@ -1,3 +1,22 @@
+/**
+ * apps/api/src/fhir/fhir.service.ts
+ *
+ * FHIR service — handles FHIR bundle ingestion and resource queries.
+ *
+ * 📝 NestJS Concepts Demonstrated:
+ *   - **@Injectable()** with constructor DI (Kafka producer)
+ *   - **Drizzle ORM** for PostgreSQL queries (select, insert, where)
+ *   - **Kafka events** via TypedProducer for async processing
+ *   - **Inline type** for FHIR bundle validation function
+ *
+ * Flow:
+ *   ingestBundle(): Validate bundle → emit `fhir.resource.ingested` → return summary
+ *   getResource():  Query fhir_resources table by resourceType + fhirId
+ *   searchResources(): Query with optional filters + pagination
+ *
+ * The fhir-ingestion microservice consumes the Kafka event and does the
+ * actual FHIR R4 schema validation + persistence.
+ */
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { eq, desc, and, like } from 'drizzle-orm';
 import { createDb, schema, type Database } from '@caregiver/db';
@@ -5,14 +24,34 @@ import { KAFKA_PRODUCER } from '../kafka/kafka.module.js';
 import type { TypedProducer } from '@caregiver/kafka';
 import type { FhirResourceIngestedPayload } from '@caregiver/contracts';
 
-function validateBundle(bundle: unknown): Array<{ valid: boolean; resourceType: string; fhirId: string; resource: unknown; errors: string[] }> {
-  const results: Array<{ valid: boolean; resourceType: string; fhirId: string; resource: unknown; errors: string[] }> = [];
+function validateBundle(
+  bundle: unknown,
+): Array<{
+  valid: boolean;
+  resourceType: string;
+  fhirId: string;
+  resource: unknown;
+  errors: string[];
+}> {
+  const results: Array<{
+    valid: boolean;
+    resourceType: string;
+    fhirId: string;
+    resource: unknown;
+    errors: string[];
+  }> = [];
   const b = (bundle ?? {}) as Record<string, unknown>;
   const entries = Array.isArray(b.entry) ? b.entry : [];
   for (const entry of entries) {
     const e = entry as Record<string, unknown> | undefined;
     if (!e?.resource) {
-      results.push({ valid: false, resourceType: 'Unknown', fhirId: '', resource: {}, errors: ['Entry has no resource'] });
+      results.push({
+        valid: false,
+        resourceType: 'Unknown',
+        fhirId: '',
+        resource: {},
+        errors: ['Entry has no resource'],
+      });
       continue;
     }
     const r = e.resource as Record<string, unknown>;

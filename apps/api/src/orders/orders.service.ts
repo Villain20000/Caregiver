@@ -1,3 +1,21 @@
+/**
+ * apps/api/src/orders/orders.service.ts
+ *
+ * Orders service — business logic for creating, filling, and dispensing orders.
+ *
+ * 📝 NestJS Concepts Demonstrated:
+ *   - **Singleton service** with @Injectable()
+ *   - **Kafka event emission** at each state change
+ *   - **Union types** for polymorphic order request DTOs
+ *   - **Drizzle ORM** pattern: insert → returning() for DB interaction
+ *
+ * Handles three order types:
+ *   - Lab orders (ServiceRequest in FHIR terms)
+ *   - Imaging orders (ServiceRequest)
+ *   - Medication orders (MedicationRequest in FHIR terms)
+ *
+ * Each state change emits a Kafka event for the audit trail.
+ */
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { eq, desc } from 'drizzle-orm';
 import { createDb, schema, type Database } from '@caregiver/db';

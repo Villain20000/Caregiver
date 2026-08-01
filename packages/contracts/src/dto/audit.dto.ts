@@ -1,3 +1,13 @@
+/**
+ * packages/contracts/src/dto/audit.dto.ts
+ *
+ * REST DTOs for audit trail querying, exporting, and breach reporting.
+ *
+ * 📝 Learning Note: These DTOs support the Auditor and Medical Director
+ * roles, who need filtered access to the immutable audit log.
+ */
+
+/** Search audit logs request — query parameters for GET /api/audit. */
 export interface AuditSearchRequest {
   userId?: string;
   action?: string;

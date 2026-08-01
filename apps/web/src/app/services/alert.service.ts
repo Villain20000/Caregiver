@@ -1,3 +1,24 @@
+/**
+ * apps/web/src/app/services/alert.service.ts
+ *
+ * Angular service for real-time alert delivery via Socket.io.
+ *
+ * 📝 Angular Concepts Demonstrated:
+ *   - **@Injectable({ providedIn: 'root' })** — singleton service
+ *   - **Signal** for reactive alert list (auto-updates UI)
+ *   - **OnDestroy** lifecycle hook for cleanup
+ *   - **Socket.io** client for WebSocket real-time communication
+ *   - **Dependency injection** via inject()
+ *
+ * Flow:
+ *   1. Auth service calls `connect()` after successful login
+ *   2. Socket.io client authenticates with JWT from AuthService.token()
+ *   3. Server sends 'alert' events → signal updates → UI re-renders
+ *   4. User can acknowledge or clear alerts
+ *   5. `disconnect()` on logout
+ *
+ * The alert signal is capped at 50 items to prevent memory leaks.
+ */
 import { Injectable, inject, signal, type OnDestroy } from '@angular/core';
 import { io, type Socket } from 'socket.io-client';
 import { AuthService } from './auth.service.js';

@@ -1,8 +1,35 @@
+/**
+ * apps/api/src/orders/orders.controller.ts
+ *
+ * Orders controller — REST endpoints for clinical orders (lab, imaging, medication).
+ *
+ * 📝 NestJS Concepts Demonstrated:
+ *   - **@Controller('orders')** — route prefix
+ *   - **Class-level @UseGuards()** — applies JWT + RBAC to ALL endpoints
+ *   - **@RequirePermission()** — route-level RBAC with different permissions
+ *   - **@Param(':id')** — route parameter extraction
+ *   - **@Request() req** — access authenticated user
+ *
+ * Separate endpoints for each order type:
+ *   POST /api/orders/lab         → 'order.lab_create'
+ *   POST /api/orders/imaging     → 'order.imaging_create'
+ *   POST /api/orders/medication  → 'order.medication_create'
+ *   POST /api/orders/:id/fill    → 'order.fill'
+ *   POST /api/orders/:id/dispense → 'order.dispense'
+ */
 import { Body, Controller, Get, Param, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { RbacGuard, RequirePermission } from '../common/rbac.guard.js';
 import { OrdersService } from './orders.service.js';
-import type { UserProfile, CreateLabOrderRequest, CreateImagingOrderRequest, CreateMedicationOrderRequest, FillOrderRequest, DispenseOrderRequest, OrderResponse } from '@caregiver/contracts';
+import type {
+  UserProfile,
+  CreateLabOrderRequest,
+  CreateImagingOrderRequest,
+  CreateMedicationOrderRequest,
+  FillOrderRequest,
+  DispenseOrderRequest,
+  OrderResponse,
+} from '@caregiver/contracts';
 
 @Controller('orders')
 @UseGuards(JwtAuthGuard, RbacGuard)

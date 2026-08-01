@@ -1,3 +1,23 @@
+/**
+ * apps/api/src/billing/billing.service.ts
+ *
+ * Billing service — business logic for claims, adjudication, and payments.
+ *
+ * 📝 NestJS Concepts Demonstrated:
+ *   - **@Injectable()** with @Inject(KAFKA_PRODUCER) for DI
+ *   - **Drizzle ORM** for all PostgreSQL queries
+ *   - **Kafka event emission** at each lifecycle step
+ *   - **Exception handling** with NotFoundException
+ *
+ * Flow for each operation:
+ *   1. Validate (check claim exists, etc.)
+ *   2. Mutate DB (update status, amounts, timestamps)
+ *   3. Emit Kafka event (for audit trail + downstream services)
+ *   4. Map DB row → API response DTO
+ *
+ * Kafka events emitted:
+ *   - claim.created → claim.submitted → claim.adjudicated → payment.posted
+ */
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { eq, desc } from 'drizzle-orm';
 import { createDb, schema, type Database } from '@caregiver/db';

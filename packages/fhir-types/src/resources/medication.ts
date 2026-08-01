@@ -1,3 +1,14 @@
+/**
+ * packages/fhir-types/src/resources/medication.ts
+ *
+ * FHIR R4 `Medication` resource — a medication or pharmaceutical product.
+ * Used as the definitional resource referenced by MedicationRequest and
+ * MedicationDispense.
+ *
+ * Used by: Pharmacist, Doctor roles (for medication catalog).
+ *
+ * @see https://hl7.org/fhir/R4/medication.html
+ */
 import type {
   DomainResource,
   Identifier,
@@ -7,6 +18,7 @@ import type {
   FhirDateTime,
 } from '../base.js';
 
+/** FHIR R4 Medication resource. */
 export interface Medication extends DomainResource {
   resourceType: 'Medication';
   identifier?: Identifier[];

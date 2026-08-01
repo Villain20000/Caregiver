@@ -67,6 +67,14 @@ vi.mock('drizzle-orm', () => ({
   desc: vi.fn(() => ({})),
 }));
 
+// Mock bcrypt — login() calls bcrypt.compare() with the plaintext password
+// and the stored hash. The test users use plaintext placeholders for
+// passwordHash, so compare matches when the two strings are equal.
+vi.mock('bcrypt', () => ({
+  compare: vi.fn(async (data: string, hash: string) => data === hash),
+  hash: vi.fn(async (data: string) => `hashed:${data}`),
+}));
+
 // Mock @caregiver/db — createDb returns our chainable mock DB; schema is a
 // dummy object whose properties are never inspected at runtime.
 vi.mock('@caregiver/db', () => ({

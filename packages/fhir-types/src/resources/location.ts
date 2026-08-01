@@ -1,5 +1,23 @@
-import type { DomainResource, Identifier, Address, CodeableConcept, Reference, ContactPoint } from '../base.js';
+/**
+ * packages/fhir-types/src/resources/location.ts
+ *
+ * FHIR R4 `Location` resource — physical location or mobile unit where
+ * healthcare services are provided (hospital ward, clinic room, ambulance).
+ *
+ * Used by: All roles (for encounter location tracking).
+ *
+ * @see https://hl7.org/fhir/R4/location.html
+ */
+import type {
+  DomainResource,
+  Identifier,
+  Address,
+  CodeableConcept,
+  Reference,
+  ContactPoint,
+} from '../base.js';
 
+/** FHIR R4 Location resource. */
 export interface Location extends DomainResource {
   resourceType: 'Location';
   identifier?: Identifier[];
