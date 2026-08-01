@@ -40,6 +40,41 @@ export default [
   },
 
   // ----------------------------------------------------------------------
+  // Angular spec files.
+  // Spec files are excluded from tsconfig.app.json, so type-aware linting
+  // must use tsconfig.spec.json (which includes jasmine ambient types).
+  // ----------------------------------------------------------------------
+  {
+    files: ['src/**/*.spec.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: './tsconfig.spec.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
+      globals: {
+        // Jasmine globals available at runtime in Karma (from @types/jasmine).
+        describe: 'readonly',
+        xdescribe: 'readonly',
+        fdescribe: 'readonly',
+        it: 'readonly',
+        xit: 'readonly',
+        fit: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        expect: 'readonly',
+        spyOn: 'readonly',
+        fail: 'readonly',
+        jasmine: 'readonly',
+      },
+    },
+    plugins: {
+      '@angular-eslint': angular,
+    },
+  },
+
+  // ----------------------------------------------------------------------
   // Angular HTML templates files.
   // ----------------------------------------------------------------------
   {
