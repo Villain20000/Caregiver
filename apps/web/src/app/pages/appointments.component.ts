@@ -160,7 +160,17 @@ function formatTime(date: Date): string {
                 class="day-cell"
                 [class.other-month]="!day.isCurrentMonth"
                 [class.today]="day.isToday"
+                role="group"
+                tabindex="0"
+                [attr.aria-label]="'Schedule on ' + (day.date | date: 'MMM d')"
                 (click)="onSlotClick(day.date, viewMode())"
+                (keydown.enter)="
+                  $event.target === $event.currentTarget && onSlotClick(day.date, viewMode())
+                "
+                (keydown.space)="
+                  $event.target === $event.currentTarget && onSlotClick(day.date, viewMode());
+                  $event.preventDefault()
+                "
                 (dragover)="onDragOver($event)"
                 (drop)="onDrop($event, day.date)"
               >
@@ -174,9 +184,16 @@ function formatTime(date: Date): string {
                         color: getStatusColor(apt.status).text,
                         borderLeftColor: getStatusColor(apt.status).dot,
                       }"
+                      role="button"
+                      tabindex="0"
+                      [attr.aria-label]="formatTime(newDate(apt.start)) + ' - ' + apt.reason"
                       draggable="true"
                       (dragstart)="onDragStart($event, apt)"
                       (click)="$event.stopPropagation(); openDetailModal(apt)"
+                      (keydown.enter)="$event.stopPropagation(); openDetailModal(apt)"
+                      (keydown.space)="
+                        $event.stopPropagation(); openDetailModal(apt); $event.preventDefault()
+                      "
                       [title]="formatTime(newDate(apt.start)) + ' - ' + apt.reason"
                     >
                       {{ formatTime(newDate(apt.start)) }}
@@ -203,7 +220,12 @@ function formatTime(date: Date): string {
               <span
                 class="day-header-cell"
                 [class.today]="isToday(d)"
+                role="button"
+                tabindex="0"
+                [attr.aria-label]="'View day ' + (d | date: 'EEE MMM d')"
                 (click)="viewMode.set('day'); selectedDate.set(d)"
+                (keydown.enter)="viewMode.set('day'); selectedDate.set(d)"
+                (keydown.space)="viewMode.set('day'); selectedDate.set(d); $event.preventDefault()"
               >
                 {{ d.toLocaleDateString('en-US', { weekday: 'short' }) }}
                 <span class="day-header-num">{{ d.getDate() }}</span>
@@ -217,7 +239,18 @@ function formatTime(date: Date): string {
                 @for (day of weekDays(); track day.toISOString()) {
                   <div
                     class="hour-cell"
+                    role="group"
+                    tabindex="0"
                     (click)="onSlotClick(newDate(day), viewMode(), slot.hour)"
+                    (keydown.enter)="
+                      $event.target === $event.currentTarget &&
+                        onSlotClick(newDate(day), viewMode(), slot.hour)
+                    "
+                    (keydown.space)="
+                      $event.target === $event.currentTarget &&
+                        onSlotClick(newDate(day), viewMode(), slot.hour);
+                      $event.preventDefault()
+                    "
                     (dragover)="onDragOver($event)"
                     (drop)="onDrop($event, newDate(day), slot.hour)"
                   >
@@ -229,9 +262,18 @@ function formatTime(date: Date): string {
                           color: getStatusColor(apt.status).text,
                           borderLeftColor: getStatusColor(apt.status).dot,
                         }"
+                        role="button"
+                        tabindex="0"
+                        [attr.aria-label]="
+                          (apt.reason || 'Appointment') + ' at ' + formatTime(newDate(apt.start))
+                        "
                         draggable="true"
                         (dragstart)="onDragStart($event, apt)"
                         (click)="$event.stopPropagation(); openDetailModal(apt)"
+                        (keydown.enter)="$event.stopPropagation(); openDetailModal(apt)"
+                        (keydown.space)="
+                          $event.stopPropagation(); openDetailModal(apt); $event.preventDefault()
+                        "
                       >
                         <span class="apt-block-time">{{ formatTime(newDate(apt.start)) }}</span>
                         <span class="apt-block-reason truncate">{{
@@ -261,7 +303,18 @@ function formatTime(date: Date): string {
                 <span class="hour-label">{{ slot.label }}</span>
                 <div
                   class="hour-cell day-hour-cell"
+                  role="group"
+                  tabindex="0"
                   (click)="onSlotClick(selectedDate(), viewMode(), slot.hour)"
+                  (keydown.enter)="
+                    $event.target === $event.currentTarget &&
+                      onSlotClick(selectedDate(), viewMode(), slot.hour)
+                  "
+                  (keydown.space)="
+                    $event.target === $event.currentTarget &&
+                      onSlotClick(selectedDate(), viewMode(), slot.hour);
+                    $event.preventDefault()
+                  "
                   (dragover)="onDragOver($event)"
                   (drop)="onDrop($event, selectedDate(), slot.hour)"
                 >
@@ -273,9 +326,18 @@ function formatTime(date: Date): string {
                         color: getStatusColor(apt.status).text,
                         borderLeftColor: getStatusColor(apt.status).dot,
                       }"
+                      role="button"
+                      tabindex="0"
+                      [attr.aria-label]="
+                        (apt.reason || 'Appointment') + ' at ' + formatTime(newDate(apt.start))
+                      "
                       draggable="true"
                       (dragstart)="onDragStart($event, apt)"
                       (click)="$event.stopPropagation(); openDetailModal(apt)"
+                      (keydown.enter)="$event.stopPropagation(); openDetailModal(apt)"
+                      (keydown.space)="
+                        $event.stopPropagation(); openDetailModal(apt); $event.preventDefault()
+                      "
                     >
                       <span class="apt-block-time">{{ formatTime(newDate(apt.start)) }}</span>
                       <span class="apt-block-reason truncate">{{ apt.reason || 'No reason' }}</span>
@@ -306,13 +368,20 @@ function formatTime(date: Date): string {
       <!-- CREATE / EDIT MODAL                                 -->
       <!-- ════════════════════════════════════════════════════ -->
       @if (showModal()) {
-        <div class="modal-backdrop" (click)="closeModal()">
+        <div
+          class="modal-backdrop"
+          tabindex="-1"
+          (click)="onBackdropClick($event)"
+          (keydown.enter)="$event.target === $event.currentTarget && closeModal()"
+          (keydown.space)="
+            $event.target === $event.currentTarget && closeModal(); $event.preventDefault()
+          "
+        >
           <div
             class="modal"
             role="dialog"
             aria-modal="true"
             [attr.aria-label]="editingAppointment() ? 'Edit Appointment' : 'Schedule Appointment'"
-            (click)="$event.stopPropagation()"
           >
             <div class="modal-header">
               <h2 id="modal-title">
@@ -369,13 +438,20 @@ function formatTime(date: Date): string {
       <!-- ═══ DETAIL MODAL (read-only view) ═══ -->
       @if (showDetail() && selectedAppt()) {
         @let apt = selectedAppt()!;
-        <div class="modal-backdrop" (click)="showDetail.set(false)">
+        <div
+          class="modal-backdrop"
+          tabindex="-1"
+          (click)="onDetailBackdropClick($event)"
+          (keydown.enter)="$event.target === $event.currentTarget && showDetail.set(false)"
+          (keydown.space)="
+            $event.target === $event.currentTarget && showDetail.set(false); $event.preventDefault()
+          "
+        >
           <div
             class="modal detail-modal"
             role="dialog"
             aria-modal="true"
             aria-label="Appointment details"
-            (click)="$event.stopPropagation()"
           >
             <div class="modal-header">
               <h2 id="detail-modal-title">Appointment Details</h2>
@@ -818,6 +894,16 @@ function formatTime(date: Date): string {
         word-break: break-word;
       }
 
+      /* ═══ KEYBOARD FOCUS (a11y) ═══ */
+      .day-cell:focus-visible,
+      .hour-cell:focus-visible,
+      .day-header-cell:focus-visible,
+      .apt-chip:focus-visible,
+      .apt-block:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: -2px;
+      }
+
       /* ═══ DRAG-OVER STATE ═══ */
       .day-cell.drag-over,
       .hour-cell.drag-over {
@@ -1137,6 +1223,15 @@ export class AppointmentsComponent implements OnInit, OnDestroy {
   closeModal(): void {
     this.showModal.set(false);
     this.editingAppointment.set(null);
+  }
+
+  // ── Modal backdrop helpers (a11y: close only when the backdrop itself is clicked) ──
+  onBackdropClick(event: MouseEvent): void {
+    if (event.target === event.currentTarget) this.closeModal();
+  }
+
+  onDetailBackdropClick(event: MouseEvent): void {
+    if (event.target === event.currentTarget) this.showDetail.set(false);
   }
 
   // ── Submit create / update ──────────────────────────────────────────────

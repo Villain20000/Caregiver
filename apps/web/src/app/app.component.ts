@@ -78,19 +78,25 @@ import { getRolePermissions, type Role, type Feature } from '@caregiver/rbac';
         <div class="favorites-bar">
           <div class="favorites-scroll">
             @for (fav of favoritesService.favorites(); track fav.patientId) {
-              <button
-                class="fav-chip"
-                (click)="openPatient(fav.patientId)"
-                [title]="fav.patientName || fav.patientId"
-              >
-                <span class="fav-icon">👤</span>
-                <span class="fav-name">{{ fav.patientName || fav.patientId }}</span>
-                <span
-                  class="fav-remove"
-                  (click)="$event.stopPropagation(); favoritesService.removeFavorite(fav.patientId)"
-                  >&times;</span
+              <div class="fav-chip-wrap">
+                <button
+                  class="fav-chip"
+                  (click)="openPatient(fav.patientId)"
+                  [title]="fav.patientName || fav.patientId"
                 >
-              </button>
+                  <span class="fav-icon">👤</span>
+                  <span class="fav-name">{{ fav.patientName || fav.patientId }}</span>
+                </button>
+                <button
+                  class="fav-remove"
+                  [attr.aria-label]="
+                    'Remove ' + (fav.patientName || fav.patientId) + ' from favorites'
+                  "
+                  (click)="favoritesService.removeFavorite(fav.patientId)"
+                >
+                  &times;
+                </button>
+              </div>
             }
             @if (favoritesService.favorites().length === 0) {
               <span class="fav-hint">Pin patients to access them quickly</span>
@@ -313,23 +319,30 @@ import { getRolePermissions, type Role, type Feature } from '@caregiver/rbac';
         align-items: center;
         padding: 0.15rem 0;
       }
-      .fav-chip {
+      .fav-chip-wrap {
         display: inline-flex;
         align-items: center;
-        gap: 0.3rem;
-        padding: 0.15rem 0.5rem;
         background: white;
         border: 1px solid var(--color-border);
         border-radius: 9999px;
-        cursor: pointer;
-        font-size: 0.75rem;
+        overflow: hidden;
         white-space: nowrap;
         flex-shrink: 0;
         transition: all 0.15s;
       }
-      .fav-chip:hover {
+      .fav-chip-wrap:hover {
         border-color: var(--color-primary);
         background: var(--color-primary-surface);
+      }
+      .fav-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.15rem 0 0.15rem 0.6rem;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 0.75rem;
       }
       .fav-icon {
         font-size: 0.7rem;
@@ -340,11 +353,13 @@ import { getRolePermissions, type Role, type Feature } from '@caregiver/rbac';
         text-overflow: ellipsis;
       }
       .fav-remove {
-        margin-left: 0.1rem;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.15rem 0.55rem;
         font-size: 0.9rem;
         line-height: 1;
         opacity: 0.4;
-        cursor: pointer;
         color: var(--color-text-muted);
       }
       .fav-remove:hover {
