@@ -1,3 +1,18 @@
+/**
+ * apps/web/tsconfig.spec.json
+ *
+ * TypeScript configuration for the Karma + Jasmine unit test build (`ng test`).
+ * Extends the shared base config (strict mode, @caregiver/* path aliases) with
+ * test-specific settings:
+ *
+ *   - types: ["jasmine"]  → jasmine globals available in every spec
+ *   - composite/declaration/incremental disabled → the karma webpack builder
+ *     manages emit itself (avoids TS6304 with the Angular CLI)
+ *   - rootDir: "../../.."  → the karma TS program pulls in workspace package
+ *     sources (@caregiver/rbac, @caregiver/ui) that live outside apps/web/src,
+ *     so the common root is the monorepo root
+ *   - include → spec files + src/test.ts (the karma entry point)
+ */
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {

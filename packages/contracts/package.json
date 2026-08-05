@@ -9,6 +9,7 @@
   "scripts": {
     "build": "tsc -b",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "//dependencies": "Depends on fhir-types (FHIR resource references in payloads) and kafka (KafkaTopic type in the EventPayloads map).",
@@ -17,6 +18,7 @@
     "@caregiver/kafka": "0.1.0"
   },
   "devDependencies": {
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vitest": "^2.1.0"
   }
 }

@@ -1,3 +1,18 @@
+/**
+ * apps/web/angular.json — Angular CLI workspace configuration for the
+ * Caregiver web app (Angular 17+, standalone components).
+ *
+ * Targets:
+ *   - build → @angular-devkit/build-angular:application (prod/dev)
+ *   - serve → Angular dev server on port 4200
+ *   - test  → @angular-builders/custom-webpack:karma — Karma + Jasmine unit
+ *             tests. customWebpackConfig injects karma.webpack.config.cjs,
+ *             which adds resolve.extensionAlias so the app's `.js`-suffixed
+ *             imports resolve to their `.ts` sources in the karma build.
+ *
+ * Note: Angular's JSONC parser tolerates comments; this header is
+ * documentation only and is ignored at parse time.
+ */
 {
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,

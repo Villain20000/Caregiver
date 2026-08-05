@@ -9,6 +9,7 @@
   "scripts": {
     "build": "tsc -b",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "//dependencies": "kafkajs is the only Node.js Kafka client with full TypeScript support.",
@@ -16,6 +17,7 @@
     "kafkajs": "^2.2.4"
   },
   "devDependencies": {
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vitest": "^2.1.0"
   }
 }

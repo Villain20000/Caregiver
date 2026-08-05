@@ -9,7 +9,8 @@
  *   - AppointmentModule → appointment CRUD (emits Kafka events)
  *   - VitalsModule    → vitals recording (emits Kafka events)
  *   - AiModule        → AI diagnosis request/review (emits Kafka events)
- *   - AlertsGateway   → Socket.io gateway for real-time alerts
+ *   - AlertsModule    → alert compliance API + Socket.io gateway + Kafka
+ *                       consumer (alert.dispatched → gateway broadcast)
  *   - KafkaModule     → Kafka producer (global provider)
  */
 import { Module } from '@nestjs/common';
@@ -22,7 +23,7 @@ import { AuditModule } from './audit/audit.module.js';
 import { FhirModule } from './fhir/fhir.module.js';
 import { OrdersModule } from './orders/orders.module.js';
 import { BillingModule } from './billing/billing.module.js';
-import { AlertsGateway } from './alerts/alerts.gateway.js';
+import { AlertsModule } from './alerts/alerts.module.js';
 import { KafkaModule } from './kafka/kafka.module.js';
 
 @Module({
@@ -38,8 +39,9 @@ import { KafkaModule } from './kafka/kafka.module.js';
     FhirModule,
     OrdersModule,
     BillingModule,
+    // AlertsModule — REST compliance endpoints + Socket.io gateway + the
+    // Kafka consumer that forwards alert.dispatched (incl. escalations).
+    AlertsModule,
   ],
-  // WebSocket gateway — real-time alert delivery via Socket.io.
-  providers: [AlertsGateway],
 })
 export class AppModule {}

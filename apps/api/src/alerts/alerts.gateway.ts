@@ -16,6 +16,9 @@
  *   2. Server verifies JWT → client joins `role:<role>` + `user:<userId>` rooms
  *   3. `broadcastAlert()` is called by the Kafka consumer (alert.dispatched)
  *   4. Server emits 'alert' event to the appropriate rooms
+ *   5. Client acknowledges → server emits `alert.acknowledged` on Kafka;
+ *      the notifications service persists the ack (this gateway performs
+ *      NO direct DB writes — BFF pattern).
  */
 import {
   WebSocketGateway,
@@ -26,13 +29,16 @@ import {
   SubscribeMessage,
   MessageBody,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
+import { Logger, Inject } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
-import { eq } from 'drizzle-orm';
-import { createDb, schema, type Database } from '@caregiver/db';
-import type { UserProfile } from '@caregiver/contracts';
-import type { AlertDispatchedPayload } from '@caregiver/contracts';
+import type { TypedProducer } from '@caregiver/kafka';
+import type {
+  UserProfile,
+  AlertDispatchedPayload,
+  AlertAcknowledgedPayload,
+} from '@caregiver/contracts';
+import { KAFKA_PRODUCER } from '../kafka/kafka.module.js';
 
 @WebSocketGateway({
   namespace: '/',
@@ -43,14 +49,14 @@ import type { AlertDispatchedPayload } from '@caregiver/contracts';
 })
 export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger('AlertsGateway');
-  private readonly db: Database;
 
   @WebSocketServer()
   server!: Server;
 
-  constructor(private readonly jwtService: JwtService) {
-    this.db = createDb();
-  }
+  constructor(
+    private readonly jwtService: JwtService,
+    @Inject(KAFKA_PRODUCER) private readonly producer: TypedProducer,
+  ) {}
 
   async handleConnection(client: Socket): Promise<void> {
     try {
@@ -90,6 +96,15 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  /**
+   * Client acknowledges an alert (dismiss button).
+   *
+   * The gateway does NOT write to the database — it emits an
+   * `alert.acknowledged` Kafka event that the notifications service
+   * consumes to persist acknowledged/acknowledgedBy/acknowledgedAt.
+   * This keeps ALL alert persistence in the notifications service
+   * (consistent with creation + escalation).
+   */
   @SubscribeMessage('alert:acknowledge')
   async handleAcknowledge(
     @ConnectedSocket() client: Socket,
@@ -99,21 +114,31 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!user) {
       return { success: false };
     }
+    // Defensive: never dispatch a Kafka event without a usable alert id.
+    // The socket body is untrusted runtime input (no class-validator on
+    // gateways), so guard against a missing body, missing/null id,
+    // non-string ids, and whitespace-only ids alike.
+    if (typeof data?.alertId !== 'string' || !data.alertId.trim()) {
+      return { success: false };
+    }
+
+    const payload: AlertAcknowledgedPayload = {
+      alertId: data.alertId,
+      acknowledgedBy: user.id,
+      acknowledgedAt: new Date().toISOString(),
+    };
 
     try {
-      await this.db
-        .update(schema.alerts)
-        .set({
-          acknowledged: true,
-          acknowledgedBy: user.id,
-          acknowledgedAt: new Date(),
-        })
-        .where(eq(schema.alerts.id, data.alertId));
+      await this.producer.send('alert.acknowledged', payload, {
+        correlationId: data.alertId,
+        userId: user.id,
+        userRole: user.role,
+      });
 
-      this.logger.log(`Alert ${data.alertId} acknowledged by ${user.id}`);
+      this.logger.log(`Alert ${data.alertId} acknowledgment dispatched for ${user.id}`);
       return { success: true };
     } catch (error) {
-      this.logger.error(`Failed to acknowledge alert ${data.alertId}: ${error}`);
+      this.logger.error(`Failed to dispatch acknowledgment for alert ${data.alertId}: ${error}`);
       return { success: false };
     }
   }

@@ -131,6 +131,12 @@
 8. [Angular Patterns in This Project](#8-angular-patterns-in-this-project)
 9. [NestJS Patterns in This Project](#9-nestjs-patterns-in-this-project)
 10. [How to Add a New Feature](#10-how-to-add-a-new-feature)
+11. [AI Diagnostics Feature — Deep Dive with Full Flow Diagram](#11-ai-diagnostics-feature--deep-dive-with-full-flow-diagram)
+12. [Vital Signs → Alerts Pipeline — Deep Dive with Full Flow Diagram](#12-vital-signs--alerts-pipeline--deep-dive-with-full-flow-diagram)
+13. [Unit Testing — Karma + Jasmine Setup](#13-unit-testing--karma--jasmine-setup)
+14. [Patient Favorites — localStorage Persistence](#14-patient-favorites--localstorage-persistence)
+15. [Dashboard Quick Actions — RBAC-Driven Role UI](#15-dashboard-quick-actions--rbac-driven-role-ui)
+16. [Alert Acknowledgment + Escalation — Deep Dive](#16-alert-acknowledgment--escalation--deep-dive)
 
 ---
 
@@ -1376,3 +1382,469 @@ Permission:     billing.claim_create
 ---
 
 > **Pro tip:** Use the `file_picker` agent with prompts like "Find the page component for billing" or "Find where Kafka topics are defined" to quickly navigate the codebase. Use `code_searcher` with patterns like `@RequirePermission` or `@UseGuards` to see how patterns are used across files.
+
+---
+
+## 13. Unit Testing — How the Test Suite Is Wired
+
+This section explains how unit tests are organized across the monorepo, why
+
+the Angular (karma) setup looks the way it does, and how to add your own specs.
+
+### 13a. Test runners at a glance
+
+| Workspace            | Runner              | How to run                                                             |
+| -------------------- | ------------------- | ---------------------------------------------------------------------- |
+| `apps/web` (Angular) | **Karma + Jasmine** | `npm run test --workspace @caregiver/web` (i.e. `ng test`)             |
+| `apps/api` (NestJS)  | **Vitest**          | `npm run test --workspace @caregiver/api`                              |
+| `services/*`         | **Vitest**          | `npm run test --workspace @caregiver/<name>`                           |
+| `packages/*`         | **Vitest**          | `npm run test --workspace @caregiver/<name>`                           |
+| Everything           | —                   | `npm run test` (all workspaces — also what the pre-push git hook runs) |
+
+### 13b. The karma/jasmine setup (apps/web)
+
+Unlike the rest of the monorepo (vitest), the Angular app runs its specs in a
+
+real browser via **Karma + Jasmine**. The wiring:
+
+| Piece             | File                                | What it does                                                                              |
+| ----------------- | ----------------------------------- | ----------------------------------------------------------------------------------------- |
+| Test target       | `apps/web/angular.json` → `test`    | Uses `@angular-builders/custom-webpack:karma` so webpack config can be injected           |
+| Custom webpack    | `apps/web/karma.webpack.config.cjs` | Adds `resolve.extensionAlias: { '.js': ['.ts', ...] }` — see the "why" below              |
+| Test TS config    | `apps/web/tsconfig.spec.json`       | `types: ["jasmine"]`, `rootDir: ../../..` for workspace package sources                   |
+| Browser launchers | `apps/web/karma.conf.cjs`           | `ChromeHeadless` + `ChromeHeadlessNoSandbox`                                              |
+| Coverage gate     | `apps/web/karma.conf.cjs`           | `coverageReporter.check` fails the run below 80% lines/statements, 70% branches/functions |
+| Test bootstrap    | `apps/web/src/test.ts`              | Initializes the Angular testing environment (JIT + browser DOM)                           |
+| Spec linting      | `apps/web/eslint.config.js`         | Specs type-check against `tsconfig.spec.json` and get jasmine globals                     |
+
+**Why the custom webpack config?** The codebase uses `.js`-suffixed relative
+
+imports everywhere (`import { AuthService } from './services/auth.service.js'`),
+which is great for ESM interop but trips up the karma webpack build: the
+Angular CLI's webpack config never maps `.js` → `.ts`, so karma would fail with
+`Module not found: Can't resolve './auth.service.js'`. The `extensionAlias` in
+`karma.webpack.config.cjs` makes `.js` requests resolve to the matching `.ts`
+source — which also lets specs import the workspace packages (`@caregiver/rbac`,
+`@caregiver/ui`) directly.
+
+**Running the web tests locally** — karma needs a Chrome binary:
+
+```bash
+# Point CHROME_BIN at any Chrome/Chromium binary (e.g. Playwright's cache)
+CHROME_BIN=/path/to/chrome npx ng test --watch=false --browsers=ChromeHeadless
+```
+
+### 13c. Test inventory
+
+| Suite                   | File(s)                                                                           | What's covered                                                                                         |
+| ----------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| ThemeService (web)      | `apps/web/src/app/services/theme.service.spec.ts`                                 | light/dark default, toggle, persistence, `data-theme` attribute                                        |
+| AuthService (web)       | `apps/web/src/app/services/auth.service.spec.ts`                                  | session restore, login, refresh, logout, storage                                                       |
+| rbacGuard (web)         | `apps/web/src/app/guards/rbac.guard.spec.ts`                                      | allow/conditional/deny/no-role vs the real matrix                                                      |
+| StatusBadge (web)       | `apps/web/src/app/ui/status-badge.component.spec.ts`                              | status text/classes, size variants                                                                     |
+| Dashboard (web)         | `apps/web/src/app/pages/dashboard.component.spec.ts`                              | RBAC-gated quick actions + feature cards, insight strip vs the real matrix                             |
+| Favorites (web)         | `apps/web/src/app/services/patient-favorites.service.spec.ts`                     | pin/recent persistence, caps, hydration, corrupt-data guard                                            |
+| Orders (web)            | `apps/web/src/app/pages/orders/orders.component.spec.ts`                          | load/error, per-role order types, create routing, fill/dispense                                        |
+| Billing (web)           | `apps/web/src/app/pages/billing/billing.component.spec.ts`                        | claims/summary load, RBAC actions, create, adjudication, payment                                       |
+| FHIR (web)              | `apps/web/src/app/pages/fhir/fhir.component.spec.ts`                              | load, search/ingest RBAC, bundle ingest, detail toggle                                                 |
+| Audit (web)             | `apps/web/src/app/pages/audit.component.spec.ts`                                  | log load/render, user/resource filters, reset                                                          |
+| App shell (web)         | `apps/web/src/app/app.component.spec.ts`                                          | favorites bar chips, pin/unpin, empty state, auth gating                                               |
+| Order forms (web)       | `apps/web/src/app/pages/orders/order-{imaging,medication}-form.component.spec.ts` | typed emit, validation, optional→undefined, resetTick, disabled submit                                 |
+| Create-claim form (web) | `apps/web/src/app/pages/billing/billing-create-claim.component.spec.ts`           | line-item add/remove, typed emit + netAmount math, validation, resetTick, disabled submit              |
+| FHIR search (web)       | `apps/web/src/app/pages/fhir/fhir-search.component.spec.ts`                       | search/ingest emit, ingest validation, ingestResult reset, RBAC gating, disabled buttons               |
+| API services (web)      | `apps/web/src/app/services/{order,billing,fhir,audit}.service.spec.ts`            | HttpClient-spy: verbs, URLs, request bodies, query params per endpoint                                 |
+| AlertService (web)      | `apps/web/src/app/services/alert.service.spec.ts`                                 | socket lifecycle: connect gating, connect/disconnect events, alert signal + 50 cap, acknowledge, clear |
+| API services            | `apps/api/src/*/__tests__/*.spec.ts`                                              | audit, billing, fhir, orders, vitals services                                                          |
+| ai-rag                  | `services/ai-rag/src/rag/__tests__/*.spec.ts`                                     | ollama client, chroma client, rag pipeline                                                             |
+| Shared packages         | `packages/{rbac,contracts,kafka}/src/__tests__/`                                  | permission matrix, typed payloads, kafka envelope                                                      |
+
+### 13d. How to write a new spec
+
+**A service with mocked collaborators** — provide mocks via `TestBed` and
+assert with jasmine spies:
+
+```typescript
+import { TestBed } from '@angular/core/testing';
+import { HttpClient } from '@angular/common/http';
+import { AuthService } from './auth.service';
+
+describe('AuthService', () => {
+  let httpSpy: jasmine.SpyObj<Pick<HttpClient, 'post'>>;
+
+  beforeEach(() => {
+    httpSpy = jasmine.createSpyObj('HttpClient', ['post']);
+    TestBed.configureTestingModule({
+      providers: [{ provide: HttpClient, useValue: httpSpy }],
+    });
+  });
+
+  it('posts credentials to the login endpoint', () => {
+    const service = TestBed.inject(AuthService);
+    service.login({ email: 'a@b.c', password: 'pw' });
+    expect(httpSpy.post).toHaveBeenCalledWith('/api/auth/login', jasmine.anything());
+  });
+});
+```
+
+**A functional route guard** — run it inside the injection context:
+
+```typescript
+import { TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
+import { rbacGuard } from './rbac.guard';
+
+TestBed.configureTestingModule({
+  providers: [{ provide: Router, useValue: { navigate: jasmine.createSpy() } }],
+});
+const allowed = TestBed.runInInjectionContext(() =>
+  rbacGuard({ data: { requiredPermission: 'ai.request_diagnosis' } } as any, {} as any),
+);
+```
+
+**A standalone component** — create it directly and set inputs before change
+detection:
+
+```typescript
+const fixture = TestBed.createComponent(StatusBadgeComponent);
+fixture.componentRef.setInput('status', 'completed');
+fixture.detectChanges();
+expect(fixture.nativeElement.textContent).toContain('completed');
+```
+
+### 13e. Gotchas
+
+- **Required signal inputs** (`input.required()`) throw if read before being
+  set — always call `setInput(...)` before `detectChanges()`.
+- **Import style in specs**: both `./foo` and `./foo.js` work in the karma
+  build (the `extensionAlias` handles `.js`); extensionless is the existing
+  spec convention.
+- **The pre-push hook runs `npm run test`** (all workspaces). On machines
+  without a system Chrome, export `CHROME_BIN` before `git push` or the web
+  karma suite fails and the push is rejected.
+- **Coverage floor is enforced by default**: the web `test` script runs with
+  `--code-coverage`, and `karma.conf.cjs` `coverageReporter.check` fails the
+  run when global lines/statements drop below 80% or branches/functions below
+  70% — so both CI and the pre-push hook gate on coverage, not just on
+  passing specs. To inspect the report locally: `npm run test --workspace
+@caregiver/web` (the script already enables coverage) then open
+  `apps/web/coverage/caregiver-web/index.html`.
+
+---
+
+## 14. Patient Favorites — localStorage Persistence
+
+This section traces the **patient favorites** feature — the pinned-patient
+chips and recently-viewed queue in the app shell header.
+
+### What the service owns
+
+**File:** `apps/web/src/app/services/patient-favorites.service.ts`
+
+Two independent signals:
+
+| Signal           | Purpose                                           | Capacity | Persisted? |
+| ---------------- | ------------------------------------------------- | -------- | ---------- |
+| `favorites`      | Patients the user **pinned** explicitly (★)       | 10       | ✅ yes     |
+| `recentPatients` | Patients the user **opened** (auto-tracked queue) | 20       | ✅ yes     |
+
+Both lists are hydrated from `localStorage` in the constructor and written
+back on every mutation, so pinned patients AND the recent queue survive full
+page reloads and new browser sessions.
+
+### Storage keys
+
+| Key                         | Contents                                             |
+| --------------------------- | ---------------------------------------------------- |
+| `caregiver_favorites`       | `PatientFavorite[]` — pinned patients                |
+| `caregiver_recent_patients` | `PatientFavorite[]` — recently viewed (newest first) |
+
+A `PatientFavorite` is `{ patientId, patientName?, pinnedAt }`.
+
+### Data flow
+
+```
+AppComponent (favorites bar)           PatientFavoritesService               localStorage
+        │                                     │                                │
+        │ toggleFavorite(id)                 │                                │
+        │───────────────────────────────────►│                                │
+        │                                     │ 1. update favorites signal     │
+        │                                     │    (dedupe, cap at 10)         │
+        │                                     │ 2. saveFavorites()             │
+        │                                     │───────────────────────────────►│  write
+        │                                     │                                │
+        │ openPatient(id)                    │                                │
+        │───────────────────────────────────►│                                │
+        │                                     │ 1. trackRecent(id)             │
+        │                                     │    (prepend, cap at 20)        │
+        │                                     │ 2. saveRecentPatients()        │
+        │                                     │───────────────────────────────►│  write
+        │                                     │                                │
+        │       app boot (constructor)       │                                │
+        │◄───────────────────────────────────│ loadFavorites() +              │
+        │   chips render from signals        │ loadRecentPatients() ◄─────────│  read
+```
+
+### Key files reference
+
+| Role          | File                                                     |
+| ------------- | -------------------------------------------------------- |
+| **Service**   | `apps/web/src/app/services/patient-favorites.service.ts` |
+| **Consumers** | `apps/web/src/app/app.component.ts` (favorites bar)      |
+| **Consumer**  | `apps/web/src/app/pages/patient-summary.component.ts`    |
+
+### Notes
+
+- Storage writes are **fire-and-forget** (no quota handling) — the payloads
+  are tiny (< 10 KB) so this is fine in practice.
+- Corrupt JSON in localStorage is silently ignored (`try/catch`) so a stale
+  or hand-edited value can never crash the app shell.
+- Pinned favorites are user-curated; the recents queue is best-effort churn.
+
+---
+
+## 15. Dashboard Quick Actions — RBAC-Driven Role UI
+
+This section traces the **dashboard** page — the role-aware landing page that
+renders a role overview strip, a quick-actions rail, and the workspace grid.
+
+### Layout (top → bottom)
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│  Welcome, Dr. Patel                        [ DOCTOR ]         │
+├────────────────────────────────────────────────────────────────┤
+│  Doctor                                 7/30 features         │
+│  Diagnose, prescribe, order tests, and review patient records.│
+├────────────────────────────────────────────────────────────────┤
+│  Quick Actions                                                 │
+│  [📅 Schedule appointment] [❤️ Record vitals]                 │
+│  [🤖 Request AI diagnosis] [💊 New clinical order]            │
+├────────────────────────────────────────────────────────────────┤
+│  Workspace                                                     │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐                       │
+│  │ 📅       │ │ ❤️       │ │ 🤖       │   feature cards…      │
+│  └──────────┘ └──────────┘ └──────────┘                       │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### The three computed signals
+
+**File:** `apps/web/src/app/pages/dashboard.component.ts`
+
+| Signal         | What it produces                                       | RBAC source                |
+| -------------- | ------------------------------------------------------ | -------------------------- |
+| `displayName`  | Human role name (`Doctor`)                             | `ROLE_DISPLAY_NAMES`       |
+| `roleInsights` | Role description + enabled-feature count               | `getRolePermissions(role)` |
+| `quickActions` | Up to 4 common role tasks as chips (label, icon, link) | `getRolePermissions(role)` |
+
+Every action is gated by the **same feature checks** as the nav links, so a
+role only ever sees actions it is allowed to perform:
+
+```typescript
+readonly quickActions = computed(() => {
+  const perms = getRolePermissions(role);
+  const can = (...features: Feature[]) => features.some((f) => perms[f] !== 'deny');
+
+  if (can('appointment.schedule'))     actions.push({ label: 'Schedule appointment',  icon: '📅', link: '/appointments' });
+  if (can('vitals.record'))            actions.push({ label: 'Record vitals',         icon: '❤️', link: '/vitals' });
+  if (can('ai.request_diagnosis'))     actions.push({ label: 'Request AI diagnosis',  icon: '🤖', link: '/ai' });
+  if (can('order.lab_create', 'order.imaging_create', 'order.medication_create'))
+                                       actions.push({ label: 'New clinical order',    icon: '💊', link: '/orders' });
+  // … billing, fhir, audit …
+  return actions.slice(0, 4);  // keep the rail scannable
+});
+```
+
+### Why the feature count is computed, not hard-coded
+
+`roleInsights().availableFeatures` counts non-denied permissions from the
+live matrix (`packages/rbac/src/matrix.ts`), so the number stays correct if
+the matrix changes — no per-role constant to drift.
+
+### Key files reference
+
+| Role            | File                                            |
+| --------------- | ----------------------------------------------- |
+| **Page**        | `apps/web/src/app/pages/dashboard.component.ts` |
+| **RBAC matrix** | `packages/rbac/src/matrix.ts`                   |
+| **Role names**  | `packages/rbac/src/roles.ts`                    |
+
+---
+
+## 16. Alert Acknowledgment + Escalation — Deep Dive
+
+This section traces the complete **alert lifecycle**: creation → Socket.io
+fan-out → acknowledgment → (if nobody responds) escalation.
+
+### The Full 8-Step Flow
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│              ALERT LIFECYCLE — CREATE → DELIVER → ACK → ESCALATE            │
+│                                                                              │
+│ notifications service        Kafka                  API Gateway             │
+│ ─────────────────────       ──────                  ───────────             │
+│  ┌──────────────────┐                            ┌────────────────────┐    │
+│  │ AlertService     │                            │ AlertConsumerService│   │
+│  │ createAndDispatch│                            │ (NEW — wires the    │    │
+│  │                  │                            │  pipeline)          │    │
+│  │ 1. INSERT alerts │                            └─────────┬──────────┘    │
+│  │ 2. emit ─────────┼──► alert.dispatched ───────► subscribe + forward   │
+│  └──────────────────┘                            │          │            │
+│                                                   │   ┌─────▼──────────┐  │
+│                                                   │   │ AlertsGateway  │  │
+│                                                   │   │ broadcastAlert │  │
+│                                                   │   │ → role:<role>  │  │
+│                                                   │   │ → user:<pt>    │  │
+│                                                   │   └─────┬──────────┘  │
+│                                                   │          │ 'alert'     │
+│                                                   │          ▼ Socket.io   │
+│                                                   │   ┌──────────────┐     │
+│                                                   │   │  Browser      │     │
+│                                                   │   │  alert bar    │     │
+│                                                   │   └──────┬───────┘     │
+│                                                   │          │             │
+│                                                   │   ┌──────▼───────┐     │
+│                                                   │   │  ack click   │     │
+│                                                   │   │ alert:ack-   │     │
+│                                                   │   │ nowledge     │     │
+│                                                   │   └──────┬───────┘     │
+│                                                   │          ▼             │
+│                                                   │   emit alert.acknowledged │
+│                                                   │   (gateway NEVER writes  │
+│                                                   │    the DB — BFF pattern) │
+│                                                   └──────────┬──────────┘    │
+│                                                              ▼                │
+│                              notifications AckConsumerService                │
+│                              (NEW) — subscribes to alert.acknowledged       │
+│                              UPDATE alerts SET acknowledged=TRUE            │
+│                              + audit.event mirror                            │
+│                                                                    ┌─────────┴──────┐
+│                                                                              │
+│  If NO ack within ALERT_ESCALATION_TIMEOUT_MS (default 15 min):            │
+│                                                                              │
+│  ┌──────────────────┐     ┌───────────────────────┐                         │
+│  │ EscalationService│     │  per poll (30s):      │                         │
+│  │ (NEW)            │────►│  SELECT critical/     │                         │
+│  │ checkDueEscal-   │     │  emergency alerts     │                         │
+│  │ ations() on      │     │  WHERE NOT ack NOT    │                         │
+│  │ setInterval      │     │  escalated AND old    │                         │
+│  └──────────────────┘     └──────────┬────────────┘                         │
+│                                       │ escalated → UPDATE alerts            │
+│                                       │   SET escalated = true               │
+│                                       ▼                                      │
+│  emit alert.dispatched ──► (escalated: true, severity: emergency,           │
+│                            roles: doctor, nurse, medical_director, admin)   │
+│                            → gateway broadcasts again → UI pulses 🔴         │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Step-by-step breakdown
+
+| Step   | What happens                                                     | Where                                                             |
+| ------ | ---------------------------------------------------------------- | ----------------------------------------------------------------- |
+| **1**  | Alert persisted + dispatched on `alert.dispatched`               | `services/notifications/src/alerts/alert.service.ts`              |
+| **2**  | API gateway consumer receives the event                          | `apps/api/src/alerts/alert-consumer.service.ts` (NEW)             |
+| **3**  | Gateway broadcasts to `role:*` + `user:*` Socket.io rooms        | `apps/api/src/alerts/alerts.gateway.ts:broadcastAlert()`          |
+| **4**  | Browser renders the alert bar (severity-colored chips)           | `apps/web/src/app/app.component.ts`                               |
+| **5**  | Clinician clicks ✕ → `alert:acknowledge` over Socket.io          | `apps/web/src/app/services/alert.service.ts:acknowledge()`        |
+| **6**  | Gateway emits `alert.acknowledged` on Kafka (no DB write)        | `apps/api/src/alerts/alerts.gateway.ts:handleAcknowledge()`       |
+| **6b** | Notifications persists ack + mirrors to `audit.event`            | `services/notifications/src/alerts/ack-consumer.service.ts` (NEW) |
+| **7**  | Escalation sweeper finds stale unacknowledged critical/emergency | `services/notifications/src/alerts/escalation.service.ts` (NEW)   |
+| **8**  | Escalation re-dispatched → UI renders pulsing **ESCALATED** chip | `escalation.service.ts` → gateway → `app.component.ts`            |
+
+### What makes escalation a "re-dispatch"
+
+Escalation does **not** create a new alert row. It:
+
+1. Sets `escalated = true` on the **same** row (with `escalatedAt` in
+   metadata — no schema migration needed).
+2. Re-emits on the **same** `alert.dispatched` topic with:
+   - `escalated: true` (new contract field — `packages/contracts/src/events/alert-events.ts`)
+   - severity forced to `emergency`
+   - widened `targetRoles` (`doctor`, `nurse`, `medical_director`, `admin`)
+3. Mirrors the escalation to `audit.event`.
+
+The gateway consumer treats initial and escalation dispatches identically —
+it just forwards both — so the real-time path stays a single topic.
+
+### Compliance endpoints — alert acknowledgment/escalation state
+
+The API gateway exposes a READ-ONLY surface for audit and compliance review.
+All endpoints require `audit.read_log` (admin, doctor, radiologist,
+pharmacist, billing_specialist, lab_tech, auditor, medical_director) and
+never write — alert writes belong to the notifications microservice and the
+Socket.io ack handler.
+
+| Endpoint                             | Description                                       |
+| ------------------------------------ | ------------------------------------------------- |
+| `GET /api/alerts`                    | Search alerts with filters + pagination           |
+| `GET /api/alerts/patient/:patientId` | Per-patient alert lifecycle state (newest first)  |
+| `GET /api/alerts/summary`            | Compliance summary: ack/escalation counts + rates |
+
+Query params (all optional): `patientId`, `severity`, `acknowledged`,
+`escalated`, `from`, `to` (ISO timestamps), `limit`, `offset`.
+
+Each alert response carries the full lifecycle state:
+
+```json
+{
+  "id": "…",
+  "patientId": "…",
+  "alertType": "vital_threshold",
+  "severity": "critical",
+  "message": "Critical: Heart rate 190 bpm",
+  "acknowledged": true,
+  "acknowledgedBy": "doctor-1",
+  "acknowledgedAt": "2026-07-01T00:10:00.000Z",
+  "escalated": true,
+  "escalatedAt": "2026-07-01T00:15:00.000Z",
+  "metadata": { "…": "…" },
+  "createdAt": "2026-07-01T00:00:00.000Z"
+}
+```
+
+`escalatedAt` is lifted from `metadata.escalatedAt` — the timestamp the
+escalation sweeper writes when it escalates an alert.
+
+The summary aggregates counts per severity plus ack/escalation rates:
+
+```json
+{
+  "total": 4,
+  "bySeverity": { "info": 0, "warning": 1, "critical": 2, "emergency": 1 },
+  "acknowledged": 2,
+  "unacknowledged": 2,
+  "escalated": 1,
+  "ackRate": 0.5,
+  "escalationRate": 0.25
+}
+```
+
+**Files:** `apps/api/src/alerts/alerts.controller.ts`,
+`apps/api/src/alerts/alert-query.service.ts`,
+`apps/api/src/alerts/alerts.module.ts`,
+`packages/contracts/src/dto/alert.dto.ts`.
+
+### Configuration (env vars)
+
+| Env var                       | Default         | Meaning                                 |
+| ----------------------------- | --------------- | --------------------------------------- |
+| `ALERT_ESCALATION_TIMEOUT_MS` | 900000 (15 min) | How old an unacknowledged alert must be |
+| `ALERT_ESCALATION_POLL_MS`    | 30000 (30 s)    | How often the sweeper runs              |
+
+### Key files reference
+
+| Role                         | File                                                                           |
+| ---------------------------- | ------------------------------------------------------------------------------ |
+| **Contract**                 | `packages/contracts/src/events/alert-events.ts`                                |
+| **Gateway consumer**         | `apps/api/src/alerts/alert-consumer.service.ts` (NEW)                          |
+| **Socket.io gateway**        | `apps/api/src/alerts/alerts.gateway.ts`                                        |
+| **Escalation sweeper**       | `services/notifications/src/alerts/escalation.service.ts` (NEW)                |
+| **Escalation tests**         | `services/notifications/src/alerts/__tests__/escalation.service.spec.ts` (NEW) |
+| **Ack persistence consumer** | `services/notifications/src/alerts/ack-consumer.service.ts` (NEW)              |
+| **Alert service**            | `services/notifications/src/alerts/alert.service.ts`                           |
+| **Alert compliance API**     | `apps/api/src/alerts/alerts.controller.ts` + `alert-query.service.ts`          |
+| **Alert state DTOs**         | `packages/contracts/src/dto/alert.dto.ts`                                      |
+| **Web alert service**        | `apps/web/src/app/services/alert.service.ts`                                   |
+| **Web alert bar**            | `apps/web/src/app/app.component.ts`                                            |

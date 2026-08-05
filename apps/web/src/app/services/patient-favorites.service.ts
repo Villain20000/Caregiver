@@ -9,6 +9,7 @@
 import { Injectable, signal } from '@angular/core';
 
 const STORAGE_KEY = 'caregiver_favorites';
+const RECENT_STORAGE_KEY = 'caregiver_recent_patients';
 
 export interface PatientFavorite {
   patientId: string;
@@ -22,7 +23,10 @@ export class PatientFavoritesService {
   readonly recentPatients = signal<PatientFavorite[]>([]);
 
   constructor() {
+    // Hydrate both lists from localStorage so pinned + recently-viewed
+    // patients survive full page reloads and new browser sessions.
     this.loadFavorites();
+    this.loadRecentPatients();
   }
 
   /** Add or update a patient in the favorites list. */
@@ -64,15 +68,24 @@ export class PatientFavoritesService {
     }
   }
 
-  /** Track a recently viewed patient. */
+  /**
+   * Track a recently viewed patient (most recent first, max 20).
+   *
+   * Unlike pinned favorites (which the user removes explicitly), the
+   * recents list is purely a convenience queue — it is persisted to
+   * localStorage so the user's context survives reloads, but it is
+   * expected to churn as new patients are opened.
+   */
   trackRecent(patientId: string, patientName?: string): void {
     this.recentPatients.update((prev) => {
       const filtered = prev.filter((f) => f.patientId !== patientId);
       const entry: PatientFavorite = { patientId, patientName, pinnedAt: new Date().toISOString() };
       return [entry, ...filtered].slice(0, 20);
     });
+    this.saveRecentPatients();
   }
 
+  /** Hydrate pinned favorites from localStorage (best-effort, ignores corrupt data). */
   private loadFavorites(): void {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -84,7 +97,25 @@ export class PatientFavoritesService {
     }
   }
 
+  /** Persist pinned favorites to localStorage. */
   private saveFavorites(): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(this.favorites()));
+  }
+
+  /** Hydrate recently-viewed patients from localStorage (best-effort). */
+  private loadRecentPatients(): void {
+    try {
+      const saved = localStorage.getItem(RECENT_STORAGE_KEY);
+      if (saved) {
+        this.recentPatients.set(JSON.parse(saved) as PatientFavorite[]);
+      }
+    } catch {
+      // Ignore corrupt data
+    }
+  }
+
+  /** Persist recently-viewed patients to localStorage. */
+  private saveRecentPatients(): void {
+    localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(this.recentPatients()));
   }
 }

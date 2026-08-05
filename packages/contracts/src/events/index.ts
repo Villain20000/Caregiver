@@ -22,15 +22,33 @@ import type { KafkaTopic } from '@caregiver/kafka';
 import type { FhirResourceIngestedPayload, FhirResourceValidatedPayload } from './fhir-events.js';
 import type { AppointmentCreatedPayload, AppointmentUpdatedPayload } from './appointment-events.js';
 import type { VitalsRecordedPayload } from './vitals-events.js';
-import type { AlertDispatchedPayload } from './alert-events.js';
+import type { AlertDispatchedPayload, AlertAcknowledgedPayload } from './alert-events.js';
 import type { AiDiagnosisRequestedPayload, AiDiagnosisCompletedPayload } from './ai-events.js';
 import type { AuditEventPayload } from './audit-events.js';
-import type { OrderCreatedPayload, OrderFilledPayload, OrderDispensedPayload } from './order-events.js';
-import type { ClaimCreatedPayload, ClaimSubmittedPayload, ClaimAdjudicatedPayload, PaymentPostedPayload } from './billing-events.js';
+import type {
+  OrderCreatedPayload,
+  OrderFilledPayload,
+  OrderDispensedPayload,
+} from './order-events.js';
+import type {
+  ClaimCreatedPayload,
+  ClaimSubmittedPayload,
+  ClaimAdjudicatedPayload,
+  PaymentPostedPayload,
+} from './billing-events.js';
 
 // Re-export for consumer convenience
-export type { OrderCreatedPayload, OrderFilledPayload, OrderDispensedPayload } from './order-events.js';
-export type { ClaimCreatedPayload, ClaimSubmittedPayload, ClaimAdjudicatedPayload, PaymentPostedPayload } from './billing-events.js';
+export type {
+  OrderCreatedPayload,
+  OrderFilledPayload,
+  OrderDispensedPayload,
+} from './order-events.js';
+export type {
+  ClaimCreatedPayload,
+  ClaimSubmittedPayload,
+  ClaimAdjudicatedPayload,
+  PaymentPostedPayload,
+} from './billing-events.js';
 
 /**
  * Type map: KafkaTopic → payload type.
@@ -43,6 +61,7 @@ export interface EventPayloads {
   'appointment.updated': AppointmentUpdatedPayload;
   'vitals.recorded': VitalsRecordedPayload;
   'alert.dispatched': AlertDispatchedPayload;
+  'alert.acknowledged': AlertAcknowledgedPayload;
   'ai.diagnosis.requested': AiDiagnosisRequestedPayload;
   'ai.diagnosis.completed': AiDiagnosisCompletedPayload;
   'audit.event': AuditEventPayload;

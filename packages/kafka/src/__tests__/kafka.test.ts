@@ -4,7 +4,7 @@
  * Unit tests for the @caregiver/kafka package.
  *
  * Covers:
- *   - KAFKA_TOPICS registry (9 entries, naming convention)
+ *   - KAFKA_TOPICS registry (17 entries, naming convention)
  *   - KafkaEnvelope structural sanity (runtime constructible)
  */
 import { describe, it, expect } from 'vitest';
@@ -14,8 +14,8 @@ import type { KafkaEnvelope } from '../envelope.js';
 
 // ─── KAFKA_TOPICS ──────────────────────────────────────────────
 describe('KAFKA_TOPICS', () => {
-  it('has 9 entries', () => {
-    expect(KAFKA_TOPICS).toHaveLength(9);
+  it('has 17 entries', () => {
+    expect(KAFKA_TOPICS).toHaveLength(17);
   });
 
   it('has no duplicate topics', () => {
@@ -40,7 +40,9 @@ describe('KAFKA_TOPICS', () => {
 
   it('topics with the domain.entity.action form contain at least 2 dots', () => {
     // The FHIR and AI domains use the full three-segment form.
-    const threeSegmentTopics = KAFKA_TOPICS.filter((t) => t.startsWith('fhir.') || t.startsWith('ai.'));
+    const threeSegmentTopics = KAFKA_TOPICS.filter(
+      (t) => t.startsWith('fhir.') || t.startsWith('ai.'),
+    );
     expect(threeSegmentTopics.length).toBeGreaterThan(0);
     for (const topic of threeSegmentTopics) {
       const dotCount = (topic.match(/\./g) ?? []).length;
@@ -63,8 +65,16 @@ describe('KAFKA_TOPICS', () => {
       'appointment.updated',
       'vitals.recorded',
       'alert.dispatched',
+      'alert.acknowledged',
       'ai.diagnosis.requested',
       'ai.diagnosis.completed',
+      'order.created',
+      'order.filled',
+      'order.dispensed',
+      'claim.created',
+      'claim.submitted',
+      'claim.adjudicated',
+      'payment.posted',
       'audit.event',
     ]);
   });

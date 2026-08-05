@@ -53,11 +53,12 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      # Unit tests (vitest for services, ng test for Angular).
-      # continue-on-error in Phase 1 — no test files exist yet.
+      # Unit tests (vitest for services, ng test for Angular). The web test
+      # script runs with --code-coverage; karma.conf.cjs `check` thresholds
+      # (80% lines/statements, 70% branches/functions) fail the run on
+      # coverage regressions below the floor.
       - name: Unit tests
         run: npm run test
-        continue-on-error: true # Phase 1: no test files yet.
 
       # Validate the docker-compose file syntax (catches YAML errors).
       - name: Validate docker-compose

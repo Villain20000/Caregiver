@@ -7,7 +7,7 @@
  * introspect its keys at runtime. Instead we assert that the set of topic
  * keys the type map is documented to cover matches the canonical
  * KAFKA_TOPICS registry from @caregiver/kafka. This is a runtime guard that
- * the type map covers all 9 topics; a compile-time check is also enforced
+ * the type map covers all 17 topics; a compile-time check is also enforced
  * below via a type-level assertion.
  */
 import { describe, it, expect } from 'vitest';
@@ -32,8 +32,16 @@ const EVENT_PAYLOAD_TOPIC_KEYS = [
   'appointment.updated',
   'vitals.recorded',
   'alert.dispatched',
+  'alert.acknowledged',
   'ai.diagnosis.requested',
   'ai.diagnosis.completed',
+  'order.created',
+  'order.filled',
+  'order.dispensed',
+  'claim.created',
+  'claim.submitted',
+  'claim.adjudicated',
+  'payment.posted',
   'audit.event',
 ] as const;
 
@@ -52,8 +60,8 @@ void _payloadCheck;
 
 // ─── Tests ─────────────────────────────────────────────────────
 describe('EventPayloads topic coverage', () => {
-  it('maps all 9 Kafka topics (runtime assertion)', () => {
-    expect(EVENT_PAYLOAD_TOPIC_KEYS).toHaveLength(9);
+  it('maps all 17 Kafka topics (runtime assertion)', () => {
+    expect(EVENT_PAYLOAD_TOPIC_KEYS).toHaveLength(17);
     expect([...EVENT_PAYLOAD_TOPIC_KEYS].sort()).toEqual([...KAFKA_TOPICS].sort());
   });
 
@@ -68,7 +76,7 @@ describe('EventPayloads topic coverage', () => {
     }
   });
 
-  it('KAFKA_TOPICS has 9 entries (parity check)', () => {
-    expect(KAFKA_TOPICS).toHaveLength(9);
+  it('KAFKA_TOPICS has 17 entries (parity check)', () => {
+    expect(KAFKA_TOPICS).toHaveLength(17);
   });
 });

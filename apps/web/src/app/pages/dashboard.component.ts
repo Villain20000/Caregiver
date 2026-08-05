@@ -33,19 +33,56 @@ import { getRolePermissions, ROLE_DISPLAY_NAMES, type Role, type Feature } from 
         <span class="role-badge">{{ displayName() }}</span>
       </div>
 
+      <!-- Role overview strip — one-line summary of what this role can do. -->
+      @if (roleInsights(); as insight) {
+        <div class="role-overview">
+          <div class="role-overview-main">
+            <h2>{{ displayName() }}</h2>
+            <p>{{ insight.description }}</p>
+          </div>
+          <span
+            class="role-stat"
+            [title]="
+              insight.availableFeatures + ' of ' + insight.totalFeatures + ' features enabled'
+            "
+          >
+            {{ insight.availableFeatures }}/{{ insight.totalFeatures }} features
+          </span>
+        </div>
+      }
+
+      <!-- Quick actions — the 4 most common role-specific tasks, RBAC-gated. -->
+      @if (quickActions().length > 0) {
+        <section class="quick-actions" aria-label="Quick actions">
+          <h2 class="section-title">Quick Actions</h2>
+          <div class="quick-action-grid">
+            @for (action of quickActions(); track action.label) {
+              <a [routerLink]="action.link" class="quick-action-chip">
+                <span class="qa-icon" aria-hidden="true">{{ action.icon }}</span>
+                <span class="qa-label">{{ action.label }}</span>
+                <span class="qa-arrow" aria-hidden="true">&rarr;</span>
+              </a>
+            }
+          </div>
+        </section>
+      }
+
       <!-- Feature navigation cards — rendered based on RBAC permissions. -->
-      <div class="feature-grid">
-        @for (card of featureCards(); track card.link) {
-          <a [routerLink]="card.link" class="feature-card">
-            <div class="feature-icon-wrap">
-              <span class="feature-icon">{{ card.icon }}</span>
-            </div>
-            <h3>{{ card.title }}</h3>
-            <p>{{ card.description }}</p>
-            <span class="card-action">Open {{ card.title }} &rarr;</span>
-          </a>
-        }
-      </div>
+      <section class="feature-section" aria-label="Feature areas">
+        <h2 class="section-title">Workspace</h2>
+        <div class="feature-grid">
+          @for (card of featureCards(); track card.link) {
+            <a [routerLink]="card.link" class="feature-card">
+              <div class="feature-icon-wrap">
+                <span class="feature-icon">{{ card.icon }}</span>
+              </div>
+              <h3>{{ card.title }}</h3>
+              <p>{{ card.description }}</p>
+              <span class="card-action">Open {{ card.title }} &rarr;</span>
+            </a>
+          }
+        </div>
+      </section>
     </div>
   `,
   styles: [
@@ -83,6 +120,90 @@ import { getRolePermissions, ROLE_DISPLAY_NAMES, type Role, type Feature } from 
         text-transform: uppercase;
         letter-spacing: 0.5px;
         white-space: nowrap;
+      }
+      .role-overview {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-4);
+        padding: var(--space-4) var(--space-5);
+        margin-bottom: var(--space-6);
+        background: linear-gradient(135deg, var(--color-primary-bg), var(--color-primary-surface));
+        border: 1px solid var(--color-primary-light);
+        border-radius: var(--radius-lg);
+        flex-wrap: wrap;
+      }
+      .role-overview-main h2 {
+        margin: 0 0 var(--space-1);
+        color: var(--color-primary);
+        font-size: var(--text-md);
+        font-weight: var(--font-semibold);
+      }
+      .role-overview-main p {
+        margin: 0;
+        color: var(--color-text-secondary);
+        font-size: var(--text-sm);
+        line-height: var(--leading-relaxed);
+      }
+      .role-stat {
+        padding: var(--space-1) var(--space-3);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-full);
+        font-size: var(--text-xs);
+        color: var(--color-primary);
+        font-weight: var(--font-medium);
+        white-space: nowrap;
+      }
+      .section-title {
+        margin: 0 0 var(--space-4);
+        font-size: var(--text-md);
+        color: var(--color-text-secondary);
+        font-weight: var(--font-semibold);
+      }
+      .quick-actions {
+        margin-bottom: var(--space-8);
+      }
+      .quick-action-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3);
+      }
+      .quick-action-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-2) var(--space-4);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-full);
+        text-decoration: none;
+        color: var(--color-text-primary);
+        font-size: var(--text-sm);
+        font-weight: var(--font-medium);
+        transition: all var(--transition-base);
+      }
+      .quick-action-chip:hover {
+        border-color: var(--color-primary);
+        background: var(--color-primary-surface);
+        color: var(--color-primary);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm);
+      }
+      .qa-icon {
+        font-size: 1rem;
+      }
+      .qa-arrow {
+        opacity: 0;
+        transform: translateX(-4px);
+        transition: all var(--transition-base);
+      }
+      .quick-action-chip:hover .qa-arrow {
+        opacity: 1;
+        transform: translateX(0);
+      }
+      .feature-section {
+        margin-bottom: var(--space-8);
       }
       .feature-grid {
         display: grid;
@@ -188,6 +309,79 @@ export class DashboardComponent {
   readonly displayName = computed(() => {
     const role = this.user()?.role as Role | undefined;
     return role ? ROLE_DISPLAY_NAMES[role] : '';
+  });
+
+  /** One-line descriptions of what each role is responsible for. */
+  private readonly ROLE_DESCRIPTIONS: Record<Role, string> = {
+    admin: 'Full platform administration — users, configuration, and all clinical data.',
+    doctor: 'Diagnose, prescribe, order tests, and review patient records.',
+    nurse: 'Record vitals, monitor patients, and manage day-to-day care.',
+    patient: 'View your own records, schedule appointments, and receive updates.',
+    radiologist: 'Read imaging studies and issue diagnostic reports.',
+    pharmacist: 'Review and fill prescriptions, and manage medication inventory.',
+    billing_specialist: 'Create claims, submit to insurers, and post payments.',
+    lab_tech: 'Process lab orders and record results.',
+    auditor: 'Read-only access to all data and the compliance audit trail.',
+    medical_director: 'Clinical oversight, approve AI diagnoses, and quality reporting.',
+  };
+
+  /**
+   * Role insight strip — description + enabled-feature count.
+   * The count reflects the user's actual RBAC permissions, not a hard-coded
+   * per-role number, so it stays correct if the matrix changes.
+   */
+  readonly roleInsights = computed(() => {
+    const role = this.user()?.role as Role | undefined;
+    if (!role) return null;
+    const perms = getRolePermissions(role);
+    const features = Object.keys(perms) as Feature[];
+    return {
+      description: this.ROLE_DESCRIPTIONS[role],
+      availableFeatures: features.filter((f) => perms[f] !== 'deny').length,
+      totalFeatures: features.length,
+    };
+  });
+
+  /**
+   * Quick actions — the most common tasks for the current role, surfaced
+   * as tappable chips above the workspace grid.
+   *
+   * Each action is gated by the same RBAC feature checks as the nav links,
+   * so a role only ever sees actions it is allowed to perform. Capped at 4
+   * to keep the strip scannable.
+   */
+  readonly quickActions = computed(() => {
+    const role = this.user()?.role as Role | undefined;
+    if (!role) return [];
+
+    const perms = getRolePermissions(role);
+    const can = (...features: Feature[]) => features.some((f) => perms[f] !== 'deny');
+
+    const actions: Array<{ label: string; icon: string; link: string }> = [];
+
+    if (can('appointment.schedule')) {
+      actions.push({ label: 'Schedule appointment', icon: '📅', link: '/appointments' });
+    }
+    if (can('vitals.record')) {
+      actions.push({ label: 'Record vitals', icon: '❤️', link: '/vitals' });
+    }
+    if (can('ai.request_diagnosis')) {
+      actions.push({ label: 'Request AI diagnosis', icon: '🤖', link: '/ai' });
+    }
+    if (can('order.lab_create', 'order.imaging_create', 'order.medication_create')) {
+      actions.push({ label: 'New clinical order', icon: '💊', link: '/orders' });
+    }
+    if (can('billing.claim_create')) {
+      actions.push({ label: 'Create claim', icon: '💰', link: '/billing' });
+    }
+    if (can('fhir.view', 'fhir.ingest', 'fhir.search')) {
+      actions.push({ label: 'Browse FHIR resources', icon: '📋', link: '/fhir' });
+    }
+    if (can('audit.read_log')) {
+      actions.push({ label: 'View audit trail', icon: '🔍', link: '/audit' });
+    }
+
+    return actions.slice(0, 4);
   });
 
   /**

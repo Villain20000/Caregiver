@@ -55,10 +55,26 @@ module.exports = function (config) {
     },
 
     // Coverage reporter (requires `karma-coverage`).
+    //
+    // `check` enforces a coverage floor: karma exits non-zero when any global
+    // metric falls below its threshold, so CI (which runs `ng test` with
+    // `--code-coverage` via the workspace `test` script) fails the build on
+    // coverage regressions. Thresholds are set just below the current levels
+    // so the suite passes today while still gating meaningful drops:
+    //   - lines 80% (the headline floor), statements 80%
+    //   - branches/functions 70% (harder to lift; revisit as specs grow)
     coverageReporter: {
       dir: require('path').join(__dirname, './coverage/caregiver-web'),
       subdir: '.',
       reporters: [{ type: 'html' }, { type: 'text-summary' }],
+      check: {
+        global: {
+          statements: 80,
+          branches: 70,
+          functions: 70,
+          lines: 80,
+        },
+      },
     },
 
     // Reporters to use. `progress` prints dots/lines; `kjhtml` renders the

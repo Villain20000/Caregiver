@@ -37,6 +37,8 @@ export const KAFKA_TOPICS = [
   // ── Alert domain ──────────────────────────────────────────
   /** Emitted when a threshold breach or critical event occurs. */
   'alert.dispatched',
+  /** Emitted by the API gateway when a user acknowledges an alert. */
+  'alert.acknowledged',
 
   // ── AI domain — diagnosis pipeline ────────────────────────
   /** Emitted by API gateway on behalf of a doctor requesting AI diagnosis. */

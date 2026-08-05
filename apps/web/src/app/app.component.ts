@@ -109,7 +109,18 @@ import { getRolePermissions, type Role, type Feature } from '@caregiver/rbac';
         <div class="alert-bar">
           <div class="alert-scroll">
             @for (alert of alertService.alerts(); track alert.alertId) {
-              <div class="alert-item" [class]="'severity-' + alert.severity">
+              <div
+                class="alert-item"
+                [class]="'severity-' + alert.severity + (alert.escalated ? ' escalated' : '')"
+                [title]="
+                  alert.escalated
+                    ? 'Escalated alert — unacknowledged past the timeout. Acknowledge or reassign.'
+                    : 'Alert'
+                "
+              >
+                @if (alert.escalated) {
+                  <span class="alert-escalated-tag" aria-label="Escalated alert">ESCALATED</span>
+                }
                 <span class="alert-msg">{{ alert.message }}</span>
                 <button (click)="alertService.acknowledge(alert.alertId)" class="alert-dismiss">
                   &times;
@@ -248,6 +259,30 @@ import { getRolePermissions, type Role, type Feature } from '@caregiver/rbac';
       .alert-item.severity-emergency {
         background: #fce4ec;
         color: #880e4f;
+      }
+      .alert-item.escalated {
+        border: 1px solid #880e4f;
+        animation: alert-pulse 1.6s ease-in-out infinite;
+      }
+      @keyframes alert-pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(136, 14, 79, 0.35);
+        }
+        50% {
+          box-shadow: 0 0 0 5px rgba(136, 14, 79, 0);
+        }
+      }
+      .alert-escalated-tag {
+        padding: 0.05rem 0.4rem;
+        border-radius: 3px;
+        background: #880e4f;
+        color: #fff;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        white-space: nowrap;
       }
       .alert-dismiss {
         background: none;

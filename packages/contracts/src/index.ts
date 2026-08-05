@@ -30,3 +30,4 @@ export type * from './dto/ai-diagnosis.dto.js';
 export type * from './dto/order.dto.js';
 export type * from './dto/billing.dto.js';
 export type * from './dto/audit.dto.js';
+export type * from './dto/alert.dto.js';

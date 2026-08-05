@@ -36,30 +36,61 @@ import { OrderMedicationFormComponent } from './order-medication-form.component.
 
       @switch (selectedType()) {
         @case ('lab') {
-          <app-order-lab-form [submitting]="submitting()" [resetTick]="resetTick()" (submitOrder)="onSubmit($event)" />
+          <app-order-lab-form
+            [submitting]="submitting()"
+            [resetTick]="resetTick()"
+            (submitOrder)="onSubmit($event)"
+          />
         }
         @case ('imaging') {
-          <app-order-imaging-form [submitting]="submitting()" [resetTick]="resetTick()" (submitOrder)="onSubmit($event)" />
+          <app-order-imaging-form
+            [submitting]="submitting()"
+            [resetTick]="resetTick()"
+            (submitOrder)="onSubmit($event)"
+          />
         }
         @case ('medication') {
-          <app-order-medication-form [submitting]="submitting()" [resetTick]="resetTick()" (submitOrder)="onSubmit($event)" />
+          <app-order-medication-form
+            [submitting]="submitting()"
+            [resetTick]="resetTick()"
+            (submitOrder)="onSubmit($event)"
+          />
         }
       }
     </div>
   `,
-  styles: [`
-    .form-section {
-      margin-top: 1.5rem; padding: 1.5rem; background: white;
-      border: 1px solid #e0e0e0; border-radius: 8px;
-    }
-    h2 { margin-top: 0; color: #333; font-size: 1.1rem; }
-    .form-field { margin-bottom: 1rem; }
-    .form-field label { display: block; margin-bottom: 0.3rem; font-size: 0.8rem; font-weight: 500; }
-    .form-field select {
-      width: 100%; padding: 0.5rem; border: 1px solid #ddd;
-      border-radius: 4px; box-sizing: border-box;
-    }
-  `],
+  styles: [
+    `
+      .form-section {
+        margin-top: 1.5rem;
+        padding: 1.5rem;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+      }
+      h2 {
+        margin-top: 0;
+        color: #333;
+        font-size: 1.1rem;
+      }
+      .form-field {
+        margin-bottom: 1rem;
+      }
+      .form-field label {
+        display: block;
+        margin-bottom: 0.3rem;
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+      .form-field select {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+    `,
+  ],
 })
 export class OrderCreateComponent {
   /** Order types the current user may create. */
@@ -80,11 +111,18 @@ export class OrderCreateComponent {
   constructor() {
     // Reset the type selector to the first allowed option when the parent
     // signals a successful creation or when the allowed list changes.
-    effect(() => {
-      this.resetTick();
-      const allowed = this.allowedTypes();
-      this.selectedType.set(allowed[0] ?? 'lab');
-    });
+    // `allowSignalWrites` is required: the callback intentionally syncs the
+    // `selectedType` signal with the incoming `allowedTypes`/`resetTick`
+    // inputs (writing signals inside an effect is disallowed by default,
+    // otherwise NG0600 is thrown at runtime).
+    effect(
+      () => {
+        this.resetTick();
+        const allowed = this.allowedTypes();
+        this.selectedType.set(allowed[0] ?? 'lab');
+      },
+      { allowSignalWrites: true },
+    );
   }
 
   /** Update the active order type from the dropdown. */
