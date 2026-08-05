@@ -92,10 +92,12 @@ describe('AlertService', () => {
     service.connect();
     const socket = requireSocket(service);
 
-    socket.listeners('connect').forEach((fn: () => void) => fn());
+    socket.listeners('connect').forEach((fn) => fn());
     expect(service.connected()).toBe(true);
 
-    socket.listeners('disconnect').forEach((fn: () => void) => fn());
+    // 'disconnect' listeners are typed (reason, description?) => void, so a
+    // reason argument is required when invoking them directly.
+    socket.listeners('disconnect').forEach((fn) => fn('transport close'));
     expect(service.connected()).toBe(false);
     service.disconnect();
   });
